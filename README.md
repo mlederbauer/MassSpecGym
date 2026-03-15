@@ -217,6 +217,80 @@ trainer.fit(model, datamodule=data_module)
 trainer.test(model, datamodule=data_module)
 ```
 
+## 🧪 v1.5 Model Zoo
+
+MassSpecGym v1.5 extends the benchmark with a comprehensive suite of state-of-the-art models, data utilities, and official oracles.
+
+### Spectrum Encoders (`massspecgym/models/encoders/`)
+
+| Encoder | Description | Output |
+|---------|-------------|--------|
+| **MIST** | FormulaTransformer over subformulae-annotated peaks (Goldman et al., NMI 2023) | 4096-bit Morgan fingerprint |
+| **DreaMS** | BERT-style transformer over (m/z, intensity) tokens (Bushuiev et al., Nat. Biotech. 2025) | 1024-D spectrum embedding |
+
+### De Novo Models (`massspecgym/models/de_novo/`)
+
+| Model | Type | Approach |
+|-------|------|----------|
+| **SmilesTransformer** | Autoregressive | Spectrum → SMILES (encoder-decoder transformer) |
+| **FRIGID** | MIST + MDLM decoder | Fingerprint + formula → SAFE via masked diffusion |
+| **DiffMS** | MIST + graph diffusion decoder | Fingerprint → molecular graph via discrete diffusion |
+| **MolForge** | MIST + seq2seq decoder | Fingerprint bit IDs → SMILES via autoregressive transformer |
+
+### Retrieval Models (`massspecgym/models/retrieval/`)
+
+| Model | Strategy | Description |
+|-------|----------|-------------|
+| **FingerprintFFN** | Direct | FFN predicts fingerprint from binned spectrum |
+| **DeepSets** | Direct | DeepSets predicts fingerprint from peak list |
+| **MISTFingerprintRetrieval** | Bonus | MIST predicts FP, rank by Tanimoto similarity |
+| **GenerativeRetrieval** | Bonus | Any FP2Mol decoder generates molecule, rank by FP similarity |
+| **IcebergRetrieval** | Bonus | ICEBERG simulates spectra, rank by cosine similarity |
+
+### Simulation Models (`massspecgym/models/simulation/`)
+
+| Model | Description |
+|-------|-------------|
+| **FP** | Fingerprint + metadata → spectrum via FFN |
+| **GNN** | Molecular graph + metadata → spectrum via GNN |
+| **ICEBERG** | DAG-based fragmentation with FragGNN + IntenGNN |
+
+### Official Oracles (`massspecgym/models/oracles/`)
+
+| Oracle | Task | Data-Safe |
+|--------|------|-----------|
+| **MIST-CF** | Chemical formula prediction from MS/MS spectrum | Yes |
+| **ICEBERG** | MS/MS spectrum simulation from molecular structure | Yes |
+
+### Data Utilities (`massspecgym/data/`)
+
+| Module | Function |
+|--------|----------|
+| `subformulae.py` | Subformulae assignment for MIST-based models |
+| `mist_format.py` | Convert MassSpecGym TSV to MIST-compatible format |
+| `sanity_check.py` | InChIKey-based data leakage prevention |
+| `fp2mol_dataset.py` | Parquet-based dataset for FP2Mol decoder pretraining |
+| `download.py` | Download MassSpecGym data from HuggingFace |
+
+### Quick Start with Checkpoints
+
+Place pretrained checkpoints in `checkpoints/` and load any model directly:
+
+```python
+# DreaMS spectrum embedding
+from massspecgym.models.encoders.dreams.api import PreTrainedDreaMS
+model = PreTrainedDreaMS.from_checkpoint("checkpoints/dreams/embedding_model.ckpt")
+embedding = model.embed_spectrum(mzs, intensities, precursor_mz)
+
+# MIST-CF formula prediction
+from massspecgym.models.oracles.mist_cf import predict_formulas
+candidates = predict_formulas(mzs, intensities, precursor_mz, adduct="[M+H]+")
+
+# FP2Mol decoder pretraining with data safety
+from massspecgym.data.fp2mol_dataset import FP2MolDataset
+dataset = FP2MolDataset("molecules.parquet")  # auto InChIKey sanity check
+```
+
 ## 🔗 References
 
 If you use MassSpecGym in your work, please cite the following paper:

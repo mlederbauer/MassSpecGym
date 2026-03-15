@@ -9,7 +9,7 @@ with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 setup(
     name="massspecgym",
     packages=find_packages(),
-    version="1.3.1",
+    version="1.5.0",
     description="MassSpecGym: A benchmark for the discovery and identification of molecules",
     author="MassSpecGym developers",
     author_email="roman.bushuiev@uochb.cas.cz",
@@ -47,7 +47,12 @@ setup(
             "h5py==3.11.0",
             "scikit-learn==1.5.0",
             "pandarallel==1.6.5",
-        ]
+        ],
+        "fp2mol": [
+            "transformers>=4.30.0",
+            "sentencepiece>=0.1.99",
+            "safe-mol>=0.1.0",
+        ],
     },
     python_requires='>=3.11',
     classifiers=[
