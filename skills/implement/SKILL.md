@@ -11,7 +11,7 @@ To implement a custom ML model for one of the three MassSpecGym benchmark challe
 
 ## Instructions
 
-### Step 1 — Understand the Benchmark Structure
+### Step 1: Understand the Benchmark Structure
 
 Read the project overview and understand which of the three tasks you are targeting:
 
@@ -25,7 +25,7 @@ Each task has a **bonus chemical formulae variant** that provides the ground-tru
 
 For a broad orientation, read the [demo notebook](../../notebooks/demo.ipynb) and existing model implementations in [massspecgym/models/](../../massspecgym/models/).
 
-### Step 2 — Set Up the Environment
+### Step 2: Set Up the Environment
 
 ```bash
 # Env: massspecgym
@@ -41,7 +41,7 @@ Verify the installation:
 python -c "import massspecgym; print(massspecgym.__version__)"
 ```
 
-### Step 3 — Place Your Model File
+### Step 3: Place Your Model File
 
 Add your model under the appropriate subdirectory of `massspecgym/models/`:
 
@@ -54,11 +54,11 @@ massspecgym/models/
 
 Register your class in the corresponding `__init__.py` so it can be imported as `from massspecgym.models.<task> import MyModel`.
 
-### Step 4 — Inherit the Right ABC and Implement `step()`
+### Step 4: Inherit the Right ABC and Implement `step()`
 
 The only method you are **required** to implement is `step(batch, stage)`. It must return a `dict` containing at minimum a `"loss"` key plus the task-specific prediction key shown below.
 
-**De novo generation** — inherit `DeNovoMassSpecGymModel`:
+**De novo generation**, inherit `DeNovoMassSpecGymModel`:
 
 ```python
 # Env: massspecgym
@@ -81,7 +81,7 @@ class MyDeNovoModel(DeNovoMassSpecGymModel):
         return dict(loss=loss, mols_pred=mols_pred)
 ```
 
-**Molecule retrieval** — inherit `RetrievalMassSpecGymModel`:
+**Molecule retrieval**, inherit `RetrievalMassSpecGymModel`:
 
 ```python
 # Env: massspecgym
@@ -110,7 +110,7 @@ class MyRetrievalModel(RetrievalMassSpecGymModel):
         return dict(loss=loss, scores=scores)
 ```
 
-**Spectrum simulation** — inherit `SimulationMassSpecGymModel`:
+**Spectrum simulation**, inherit `SimulationMassSpecGymModel`:
 
 ```python
 # Env: massspecgym
@@ -133,7 +133,7 @@ class MySimulationModel(SimulationMassSpecGymModel):
         return dict(loss=loss, **out)
 ```
 
-### Step 5 — Set Up Data Transforms and Dataset
+### Step 5: Set Up Data Transforms and Dataset
 
 Choose transforms appropriate for your architecture:
 
@@ -176,7 +176,7 @@ dataset = SimulationDataset(
 
 If the dataset file is not present locally, it is **downloaded automatically** from HuggingFace on first access.
 
-### Step 6 — Train and Validate
+### Step 6: Train and Validate
 
 ```python
 # Env: massspecgym
@@ -192,7 +192,7 @@ trainer.fit(model, datamodule=data_module)
 
 Evaluation metrics are logged automatically at each validation epoch by the parent class. No custom `on_validation_epoch_end` is required.
 
-### Step 7 — Test on the Official Split and Save Results
+### Step 7: Test on the Official Split and Save Results
 
 ```python
 # Env: massspecgym
@@ -214,7 +214,7 @@ python scripts/run.py \
     --accelerator gpu
 ```
 
-### Step 8 — (Optional) Register Your Model in the Model Zoo
+### Step 8: (Optional) Register Your Model in the Model Zoo
 
 If your model achieves competitive results and you wish to submit it to the leaderboard:
 
