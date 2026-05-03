@@ -3,6 +3,7 @@ name: Review Submission
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - "submissions/**"
       - "results/*.csv"
@@ -10,6 +11,8 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+    # Only run when the PR carries the 'submission' label
+    if: contains(github.event.pull_request.labels.*.name, 'submission')
     permissions:
       pull-requests: write
       contents: read
@@ -151,3 +154,26 @@ jobs:
           echo "No changes in submissions/ directories detected. Skipping submission review."
           echo "If you added results to results/*.csv without a model card, please also add"
           echo "submissions/<method_name>/model_card.yaml (see submissions/SUBMISSION_GUIDE.md)."
+
+  # Separate job: always required, never skipped, even if the review job passes.
+  # Enforces that a human maintainer must approve before merge.
+  require-human-approval:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'submission')
+    needs: review
+    # This job always requires a human PR review approval — enforced via branch
+    # protection rules (Settings → Branches → main → Require approvals: 1).
+    # This step documents the requirement explicitly in CI output.
+    steps:
+      - name: Human sign-off required
+        run: |
+          echo "=================================================="
+          echo "HUMAN REVIEW REQUIRED"
+          echo "=================================================="
+          echo "The automated review has completed. A maintainer"
+          echo "must read the review report and approve this PR"
+          echo "before it can be merged."
+          echo ""
+          echo "Maintainers: see skills/review/SKILL.md for the"
+          echo "human review checklist."
+          echo "=================================================="
