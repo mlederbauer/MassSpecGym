@@ -1,0 +1,66 @@
+# MassSpecGym Model Card Template
+# Copy this file to submissions/<method_name>/model_card.yaml and fill in all fields.
+# <method_name> must exactly match the Method column value in your results CSV
+# (replace spaces with underscores, e.g. "My Model" -> submissions/My_Model/model_card.yaml).
+
+# Identity
+method_name: ""          # Must match Method value in results CSV exactly (with spaces)
+paper_url: ""            # arXiv, DOI, or preprint URL. Required. Flagged if not accessible.
+code_url: ""             # Public GitHub/GitLab URL. Required. Flagged if not accessible.
+random_seed: null        # Integer seed used for reported results, e.g. 42
+
+# Results entries
+# One entry per task/challenge combination this model is submitted for.
+# Multiple entries allowed for models evaluated on multiple tasks.
+
+results:
+  - task: ""             # One of: de_novo | retrieval | simulation
+    challenge: ""        # One of: standard | bonus
+    results_csv: ""      # Path to the CSV file, e.g. results/de_novo_bonus.csv
+    uses_formula_at_inference: false  # true if formula predictor used to pre-filter candidates
+    # If uses_formula_at_inference=true and challenge=standard, the review will hard-fail.
+
+  # Add more entries if the model is evaluated on multiple tasks/challenges:
+  # - task: retrieval
+  #   challenge: standard
+  #   results_csv: results/retrieval.csv
+  #   uses_formula_at_inference: false
+
+# Model architecture
+
+uses_mist_encoder: false     # true if MIST spectrum encoder used
+uses_mist_cf: false          # true if MIST-CF formula predictor used at any stage
+uses_iceberg: false          # true if ICEBERG spectral simulator used at any stage
+
+# If uses_mist_encoder=true, we check the linked code for the -inf attention mask fix.
+# If uses_mist_cf=true or uses_iceberg=true, confirm you use the v1.5 data-safe versions:
+mist_cf_version: ""          # "v1.5_data_safe" or describe the version used
+iceberg_version: ""          # "v1.5_data_safe" or describe the version used
+
+# Pretraining data
+
+pretraining:
+  used: false              # Set true if ANY external data was used for pretraining
+                           # (decoder pretraining, encoder pretraining, fine-tuning, etc.)
+
+  # Fill in the fields below only if used=true:
+  description: ""          # Free text: what datasets, how many molecules, which model component
+  filtering_criterion: ""  # How test/val molecules were excluded from pretraining data.
+                           # One of: exact_match | tanimoto_0.85 | tanimoto_0.70 | tanimoto_0.50 | none
+                           # "exact_match" = only 27-char InChIKey deduplication (minimum accepted)
+                           # "tanimoto_0.70" = recommended for credible generalization claims
+  inchikey_layer_used: ""  # "14char" (connectivity, correct) or "27char" (full, insufficient)
+  parquet_url: ""          # Public URL to pretraining molecule parquet/CSV, if available.
+                           # If not public, explain why in description. Used for automated
+                           # InChIKey overlap check via massspecgym.data.sanity_check.
+
+# Evaluation setup
+
+uses_official_split: true    # Must be true. Set false only if you have a specific reason
+                              # and can justify it; will trigger manual review.
+custom_split_path: ""         # Fill if uses_official_split=false
+
+# Notes for reviewers
+# Optional free-text notes for the human reviewer. Describe anything unusual
+# about your setup, known limitations, or things the automated review may miss.
+notes: ""
