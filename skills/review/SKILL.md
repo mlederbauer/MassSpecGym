@@ -1,204 +1,79 @@
 ---
 name: review
-description: Validation checklist and procedure for reviewing community-contributed model implementations in MassSpecGym, covering code correctness, data safety, canonicalization artifacts, metric implementation, and fair benchmarking before a leaderboard submission is accepted.
+description: Maintainer guide for reviewing MassSpecGym leaderboard submissions. Covers interpreting the automated review report, performing judgment calls the automation cannot make, and approving or rejecting PRs. The automated review (scripts/review_submission.py, triggered by the review_submission GH Action) handles deterministic checks; this guide covers the residual human review.
 ---
 
-# MassSpecGym Model Review
+# MassSpecGym Submission Review — Maintainer Guide
 
-## Goal
+## Role of this guide
 
-To systematically validate a community-contributed model implementation before accepting its performance claims onto the MassSpecGym leaderboard. The review verifies that (i) the implementation correctly inherits and uses the MassSpecGym ABCs, (ii) training data does not leak test or validation molecules, including transitively through shared infrastructure, (iii) the candidate set is free of canonicalization artifacts that enable shortcut learning, (iv) formula information is not used in the mass-based challenge, (v) all shared encoder components are free of inference-time cross-sample leakage, and (vi) the reported metrics use the pinned, standardised implementations. Each failure mode listed here has been documented in the literature and found to materially alter benchmark conclusions; no item can be waived.
+Every leaderboard PR triggers `scripts/review_submission.py` automatically and posts a structured report as a PR comment. That report handles all deterministic checks (schema, CIs, tier integrity, MIST bug, pretraining filter, metric overrides). **Your job as maintainer is to:**
 
-## Instructions
+1. Read the automated report and triage any WARNINGs that require judgment
+2. Fetch and read the paper if the automated LLM review flagged concerns or couldn't access the paper
+3. Check items the automation explicitly cannot verify (listed below)
+4. Approve or request changes
 
-### Step 1: Read the Submission
+Hard failures in the automated report must be resolved by the author before you even look at the PR. Do not override hard failures without a documented reason.
 
-Locate the contributed model file(s) inside `massspecgym/models/` and the results entry in `results/`. Read the model code in full before proceeding.
+---
 
-Key questions to answer at this stage:
+## Submission requirements (what a valid PR must contain)
 
-- Which of the three tasks does the model target (de novo, retrieval, simulation)?
-- Standard or bonus (formula-conditioned) variant?
-- Does it inherit from the correct ABC (`DeNovoMassSpecGymModel`, `RetrievalMassSpecGymModel`, or `SimulationMassSpecGymModel`)?
-- Does the model use any external pretraining data, pretrained encoders, or oracle components?
+1. A new row in the correct `results/*.csv` with all required metrics and 95% bootstrap CIs
+2. A `submissions/<method_name>/model_card.yaml` filled from the template
 
-### Step 2: Verify ABC Inheritance and `step()` Return Contract
+The method name in the CSV `Method` column must exactly match `method_name` in `model_card.yaml` (underscored folder name, spaced method name). See `submissions/SUBMISSION_GUIDE.md`.
 
-Check that `step()` returns the mandatory keys for the relevant task:
+---
 
-| Task | Required keys in `step()` return dict |
-|------|---------------------------------------|
-| Retrieval | `"loss"`, `"scores"` (one float per candidate, concatenated) |
-| De novo | `"loss"`, `"mols_pred"` (list of lists: `[batch_size × top_k]`) |
-| Simulation | `"loss"`, `"pred_mzs"`, `"pred_logprobs"`, `"pred_batch_idxs"` |
+## Step 1: Read the automated report
 
-**Common mistake, wrong `scores` shape for retrieval:** `scores` must be a 1-D tensor of length equal to the total number of candidates across the batch (sum of `batch["batch_ptr"]`), not shape `(batch_size,)` or `(batch_size, n_candidates)`. Returning per-sample scores instead of per-candidate scores silently inflates hit-rate metrics.
+The PR comment from the review bot contains:
 
-**Common mistake, `mols_pred` not a list of lists:** The outer list must have one entry per spectrum in the batch; the inner list must have exactly `top_k` entries (padding with `None` when the model produces fewer valid structures). Missing this structure causes MCES and Tanimoto evaluation to mis-align predictions with ground truth.
+- **Hard failures** — must be fixed; CI blocks merge
+- **Warnings** — require your sign-off; use a PR review comment to document your decision
+- **LLM narrative review** — treat as a second opinion; verify any specific issues it flags
 
-Verify that the parent class evaluation methods are **not** called manually inside `step()`:
+For warnings, document your reasoning inline on the PR before approving.
 
-```python
-# Env: massspecgym
-# Flag this pattern, it causes double metric computation:
-self.evaluate_retrieval_step(...)  # should only be called from on_batch_end()
-```
+---
 
-### Step 3: Check Data Leakage (Direct and Transitive)
+## Step 2: Things the automation cannot check — do these manually
 
-#### 3a. Direct Leakage: External Pretraining Data
+### 2a. Paper methods section vs. model card
 
-If the model uses **any external data** (e.g., an unpaired molecule library for fingerprint-to-molecule decoder pretraining, or a pretrained encoder trained on a third-party MS/MS dataset), verify that test and validation InChIKeys are excluded using **connectivity-layer (14-char) matching**. Full 27-character InChIKey matching is insufficient: it treats stereoisomers as distinct molecules and misses stereoisomers of test structures in the pretraining corpus.
+Read the paper's methods/data section and cross-check against `model_card.yaml`:
 
-Run the built-in sanity check:
+- Does the paper describe using MIST-CF at inference to pre-filter candidates in the **mass-based** (standard) challenge? If yes and the model is submitted to `results/retrieval.csv` (not bonus), reject.
+- Does the paper describe pretraining on data sources *not listed* in the model card? Flag the discrepancy.
+- Does the paper use ICEBERG-generated spectra for pretraining? Check which ICEBERG version (data-safe v1.5 or upstream). If unclear, ask the author.
+- Does the paper's reported number match the CSV entry? Values that differ from the paper by >0.5 pp on the primary metric need explanation.
+
+### 2b. Spectrum-blind shortcut check (S2)
+
+If the model is a retrieval model, mentally check: could a model that ignores the spectrum entirely (ranking purely by PubChem deposition frequency or SMILES format) achieve similar results?
+
+The PubChem frequency-prior baseline achieves >90% Recall@1 on non-corrected datasets. If the submission's Recall@1 is at or below this level, it may not be learning from spectra at all. Ask the author to compare against the frequency-prior baseline if not already included.
+
+**Spectrum-blind classifier test (run if suspicious):** A rule-based RDKit format check (`smiles != Chem.MolToSmiles(Chem.MolFromSmiles(smiles))`) achieves >99% Recall@1 on non-canonicalized datasets. If the candidate set for this submission is non-standard, ask the author to confirm the v1.5 pre-canonicalized candidate set is used.
+
+If you have access to compute: train or run a version of the model with the spectral input zeroed out or permuted. If performance stays substantially above random (~1/pool_size), the model likely exploits a spurious correlation and should be investigated further before acceptance.
+
+### 2c. Pretraining data — if no parquet provided
+
+If `pretraining.used=true` but no parquet URL is given, ask the author to either:
+- Provide a public parquet for the InChIKey overlap check, or
+- Run `python -m massspecgym.data.sanity_check --input their_data.parquet --inchikey-col inchikey_14` themselves and share the output
+
+Do not accept claims of data safety without this check if pretraining is declared.
+
+### 2d. Reproducibility spot-check
+
+If the submission includes a checkpoint or inference script, spot-check one metric:
 
 ```bash
-# Env: massspecgym
-python -m massspecgym.data.sanity_check \
-    --input path/to/pretraining_molecules.parquet \
-    --inchikey-col inchikey_14
-```
-
-Expected output for a clean dataset:
-
-```
-CLEAN: 1000000 molecules checked, no overlap found.
-```
-
-If the check reports overlapping InChIKeys, the submission **must not** be accepted until the author removes those molecules and retrains. Deduplication based on the full 27-character InChIKey (instead of the 14-character connectivity layer) under-counts overlaps and is not sufficient.
-
-#### 3b. Transitive Leakage: Shared Oracle Components
-
-A model whose own training data is clean may still inherit test-set information through oracle components trained on overlapping data. The two primary vectors are:
-
-**MIST-CF formula predictor:** Several methods use MIST-CF at inference to predict the molecular formula of a test spectrum and pre-filter candidates. The publicly released MIST-CF checkpoint was trained on data that overlaps with the MassSpecGym test set. Any downstream model conditioned on its predictions inherits this leakage. **Always use the data-safe MIST-CF provided in MassSpecGym v1.5** (`massspecgym/models/oracles/mist_cf/`).
-
-**ICEBERG spectral simulator:** Methods that pretrain on ICEBERG-simulated spectra for structural analogues in the training set should verify that ICEBERG itself was not trained on test-set molecules. Use the data-safe ICEBERG oracle provided in MassSpecGym v1.5 (`massspecgym/models/oracles/iceberg/`).
-
-To verify oracle data safety:
-
-```python
-# Env: massspecgym
-from massspecgym.models.oracles.base import OracleBase
-oracle = oracle_model.load(device="cpu")
-assert oracle.is_data_safe(), "Oracle was not trained on a data-safe corpus, use the v1.5 release."
-```
-
-### Step 4: Check for Shortcut Learning and Task Validity Violations
-
-These are the most commonly overlooked failures. Each one can produce leaderboard-topping results with no genuine spectral reasoning.
-
-#### 4a. SMILES Canonicalization Artifact (R1)
-
-The ground-truth SMILES strings in the MassSpecGym spectral library originate from experimental depositions and retain PubChem-style formatting conventions. Decoy candidates are RDKit-canonicalized. This distributional mismatch allows a model to act purely as a syntax checker; the ground-truth molecule is the one SMILES string formatted differently from all others.
-
-**Demonstrated impact:** A rule-based RDKit format check (`smiles != Chem.MolToSmiles(Chem.MolFromSmiles(smiles))`) that never examines the spectrum achieves **>99% Recall@1** on the uncorrected dataset. A spectrum-blind SMILES binary classifier achieves **>90% Recall@1**. Models using SMILES-based encoders (ChemBERTa, ChemFormer) have been found to achieve inflated retrieval scores primarily through this artifact rather than through spectral reasoning.
-
-**Check:** Verify that the submission enforces RDKit canonicalization uniformly across all query and candidate SMILES before encoding. MassSpecGym v1.5 ships with pre-canonicalized candidate sets; verify the submission uses them.
-
-**Sanity test:** Run the spectrum-blind classifier on the candidate set used by the submission. Any result substantially above random (>> 1/candidate_pool_size) indicates a residual canonicalization artifact.
-
-```python
-# Env: massspecgym
-# Quick sanity check: RDKit canonical vs. stored SMILES
-from rdkit import Chem
-non_canonical = sum(
-    1 for smi in candidate_smiles
-    if smi != Chem.MolToSmiles(Chem.MolFromSmiles(smi))
-)
-assert non_canonical == 0, f"{non_canonical} non-canonical SMILES in candidate set"
-```
-
-#### 4b. Ground-Truth Frequency Bias
-
-Ground-truth molecules in annotated spectral libraries are disproportionately common metabolites, widely available standards, or easily synthesizable compounds. Ranking candidates by PubChem deposition frequency alone, ignoring the spectrum, achieves **>90% Recall@1**. This is an inherent distribution shift in the chemical space of annotated spectra, not a fixable artifact.
-
-**Implication for review:** Results substantially above the PubChem-frequency baseline do not necessarily reflect spectral reasoning; the baseline itself is already inflated by this prior. Flag any submission that does not compare against or acknowledge this bias.
-
-#### 4c. Formula Leakage in the Mass-Based Challenge (R2)
-
-MassSpecGym defines two distinct retrieval tiers:
-- **Mass-based (standard):** Candidates are all structures consistent with the observed precursor $m/z$ within tolerance, typically thousands of candidates.
-- **Formula-based (bonus):** The ground-truth molecular formula is provided, restricting candidates to structural isomers, an order of magnitude fewer candidates.
-
-**Common mistake:** Using a formula predictor (e.g., MIST-CF) at inference time to pre-filter candidates in the mass-based challenge. This collapses the candidate space by approximately 10× and makes results directly incomparable to other mass-based entries.
-
-**Check:** If the model uses subformula assignment, formula prediction, or any formula-conditioned component at inference, it must be submitted under the **formula-based (bonus) tier**, not the mass-based tier. Verify that results tables do not mix the two tiers.
-
-### Step 5: Check Shared Encoder Inference Correctness (R3)
-
-If the model uses MIST as a frozen feature extractor, check the attention masking implementation. The original MIST encoder was validated for single-spectrum (batch size 1) inference. In batched settings, incorrect padding handling causes shorter spectra to attend to padding tokens, collapsing their representations toward the longest spectrum in the batch.
-
-**The bug:** `attn += attn_mask` adds a zero-or-negative mask but does not fill padding positions with $-\infty$, leaving them in the softmax distribution.
-
-**Demonstrated impact:** The buggy batched implementation raises average predicted-fingerprint Tanimoto similarity from **0.37 to 0.52** (variance from 0.042 to 0.081) on the MassSpecGym test set. MIST + MolForge inflated from 10.73% to 28.50% Top-1 accuracy, a 17.8 pp artificial gain that reorders the de novo leaderboard.
-
-**Check:**
-
-```python
-# Env: massspecgym
-# In the MIST encoder forward pass, look for this pattern: it is WRONG:
-attn += attn_mask          # BUG: does not mask padding to -inf
-
-# The correct pattern fills padding positions with -inf before softmax:
-new_attn_mask = torch.zeros_like(attn_mask)
-new_attn_mask = new_attn_mask.masked_fill(attn_mask != 0, float("-inf"))
-attn += new_attn_mask      # CORRECT
-```
-
-If the submission uses the MIST encoder from `massspecgym/models/encoders/mist/`, verify it is the fixed v1.5 version. If it imports MIST from a third-party codebase, require the author to verify the fix or switch to single-sample inference.
-
-### Step 6: Verify Metric Implementations (R4)
-
-Metric divergence across codebases is sufficient to reorder leaderboard rankings on identical predictions. The four metrics with known implementation variability are:
-
-| Metric | Correct specification | Common incorrect variant |
-|--------|----------------------|--------------------------|
-| **InChIKey hit rate** | First 14 characters (connectivity layer only) | Full 27-character match, misses stereoisomers |
-| **Tanimoto similarity** | Morgan ECFP4, radius=2, 2048 bits | Radius=3 or 1024 bits, shifts scores systematically |
-| **MCES distance** | Standardized solver with pinned timeout | Unconstrained solver, produces incomparable values |
-| **Close match rate** | Tanimoto $\geq 0.85$ | $\geq 0.75$, inflates match rates |
-| **Meaningful match rate** | Tanimoto $\geq 0.75$ | $\geq 0.60$, inflates match rates |
-
-**Check:** Verify that the submission delegates all metric computation to the parent ABCs in MassSpecGym. Any override or re-implementation of metric computation outside the parent class must be flagged and checked against the specifications above. Do not accept metric implementations copied from third-party codebases without independent verification.
-
-```python
-# Env: massspecgym
-# Correct: InChIKey computed at 14-char connectivity layer
-inchikey_14 = Chem.inchi.InchiToInchiKey(Chem.inchi.MolToInchi(mol))[:14]
-
-# Correct: Morgan fingerprint at radius 2, 2048 bits
-from rdkit.Chem import AllChem
-fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048)
-```
-
-### Step 7: Verify the Evaluation Setup
-
-Confirm that the model is evaluated using the official data split and unmodified metrics:
-
-```python
-# Env: massspecgym
-# Correct: use the default MassSpecDataModule split
-data_module = MassSpecDataModule(dataset=dataset, batch_size=32)
-
-# Flag this: custom split_pth overrides the official benchmark split
-data_module = MassSpecDataModule(dataset=dataset, split_pth="my_custom_split.tsv")
-```
-
-Check that all required metric values are reported:
-
-- **Retrieval**: `hit_rate@1`, `hit_rate@5`, `hit_rate@20`, `mces@1`, any submission reporting only a subset must be flagged.
-- **De novo**: Top-1 and Top-10 accuracy, MCES, and Tanimoto, all three metrics at both $k$ values.
-- **Simulation**: Cosine similarity and Jensen–Shannon similarity, plus retrieval hit rates.
-
-Standard and bonus (formula-conditioned) variants must not be compared in the same table row.
-
-### Step 8: Reproduce the Results
-
-Clone the branch, install the environment, and run the full test suite:
-
-```bash
-# Env: massspecgym
+# In the massspecgym conda environment (Python 3.11)
 git clone <author-fork-url>
 cd MassSpecGym
 pip install -e ".[dev]"
@@ -210,92 +85,99 @@ python scripts/run.py \
     --seed 42
 ```
 
-A discrepancy of more than 0.5 percentage points on the primary metric warrants a request for clarification. Larger deviations may indicate the canonicalization artifact, the MIST batching bug, or a non-default metric implementation.
+A discrepancy >0.5 pp on the primary metric requires explanation. If the author cannot provide a reproducible checkpoint, note this in your review but it is not grounds for automatic rejection — reproducibility is aspirational for submissions without public checkpoints.
 
-### Step 9: Final Checklist
+---
 
-Before approving the pull request, confirm all of the following:
+## Step 3: Metric specifications (reference)
 
-- [ ] Model inherits the correct ABC and implements `step()` with the right return contract
-- [ ] No manual metric computation inside `step()` or `on_batch_end()`
-- [ ] Direct data leakage sanity check passed (14-char InChIKey, or not applicable)
-- [ ] Transitive leakage checked: data-safe v1.5 MIST-CF and ICEBERG oracles used
-- [ ] Candidate SMILES are RDKit-canonicalized; spectrum-blind classifier scores near-random
-- [ ] No formula predictor used to pre-filter candidates in the mass-based challenge
-- [ ] MIST encoder (if used) applies correct $-\infty$ padding mask in batched inference
-- [ ] All metrics use pinned implementations (14-char InChIKey, ECFP4 r=2 2048-bit, correct match thresholds)
-- [ ] Official data split used; standard and bonus variants not conflated
-- [ ] Results reproducible within 0.5 pp on primary metric
-- [ ] All required metric values reported; no cherry-picking of best $k$
-- [ ] `df_test_path` set so per-sample predictions are saved for audit
-- [ ] Random seed documented
-- [ ] Model registered in `massspecgym/models/<task>/__init__.py`
+All submitted metrics must match these pinned implementations:
 
-## Examples
+| Metric | Specification |
+|--------|--------------|
+| InChIKey hit rate | First 14 characters (connectivity layer) only — **not** full 27-char |
+| Tanimoto similarity | Morgan ECFP4, radius=2, 2048 bits |
+| MCES distance | `threshold=15`, `always_stronger_bound=True` — see `massspecgym/utils.py:MyopicMCES` |
+| Cosine similarity | Standard MS/MS cosine as in `massspecgym` |
+| Jensen-Shannon similarity | As in `massspecgym` |
 
-### Checking canonicalization in a candidate set
+**Do not accept** metric implementations reimported from third-party codebases unless independently verified against the specifications above.
 
+---
+
+## Step 4: Required metrics per task
+
+### De novo (standard and bonus)
+`Top-1 Accuracy`, `Top-1 MCES`, `Top-1 Tanimoto`, `Top-10 Accuracy`, `Top-10 MCES`, `Top-10 Tanimoto` — all required, all with CIs.
+
+### Retrieval (standard)
+`Hit rate @ 1`, `Hit rate @ 5`, `Hit rate @ 20`, `MCES @ 1` — all required, all with CIs.
+
+### Retrieval (bonus)
+`Hit rate @ 1`, `Hit rate @ 5`, `Hit rate @ 20`, `MCES @ 1` — all required, all with CIs.
+
+### Simulation (standard and bonus)
+`Cosine Similarity`, `Jensen-Shannon Similarity`, `Hit rate @ 1`, `Hit rate @ 5`, `Hit rate @ 20` — all required, all with CIs.
+
+Standard and bonus variants must not be compared in the same table row. A model submitted to both must have two separate CSV rows.
+
+---
+
+## Step 5: MIST batching bug (I1) — background
+
+If a submission uses the MIST encoder from an external codebase (not `massspecgym/models/encoders/mist/`), verify the attention masking in batched inference. The original MIST encoder added `attn += attn_mask` without first converting the boolean mask to `-inf`, which allows padding tokens to contribute to the softmax. The v1.5 MassSpecGym MIST encoder has this fixed.
+
+**Impact if not fixed:** Tanimoto similarity inflates from 0.37 to 0.52; de novo Top-1 inflates by ~17 pp; retrieval Top-1 inflates from 10.73% to 28.50%. This completely reorders the de novo leaderboard.
+
+**What to look for:**
 ```python
-# Env: massspecgym
-from rdkit import Chem
+# BUG (wrong):
+attn += attn_mask
 
-def check_canonicalization(smiles_list):
-    non_canonical = [
-        smi for smi in smiles_list
-        if smi != Chem.MolToSmiles(Chem.MolFromSmiles(smi))
-    ]
-    print(f"{len(non_canonical)}/{len(smiles_list)} non-canonical SMILES")
-    return non_canonical
-
-# Should output: "0/N non-canonical SMILES" for a clean v1.5 candidate set
-check_canonicalization(dataset.candidates_smiles)
+# FIX (correct):
+new_attn_mask = torch.zeros_like(attn_mask, dtype=q.dtype)
+new_attn_mask.masked_fill_(attn_mask, float("-inf"))
+attn += new_attn_mask
 ```
 
-### Running the data leakage sanity check
+The v1.5 MassSpecGym MIST encoder (`massspecgym/models/encoders/mist/transformer_layer.py`) already applies the fix. If the submission imports from there, this is satisfied.
 
-```bash
-# Env: massspecgym
-python -m massspecgym.data.sanity_check \
-    --input data/my_pretraining_mols.parquet \
-    --inchikey-col inchikey_14
-```
+---
 
-### Reproducing retrieval results
+## Step 6: Data leakage — gradient of stringency
 
-```python
-# Env: massspecgym
-from massspecgym.data import RetrievalDataset, MassSpecDataModule
-from massspecgym.data.transforms import SpecTokenizer, MolFingerprinter
-import pytorch_lightning as pl
+Data leakage is not binary. The steepest performance gradient appears at the transition from exact-match exclusion to Tanimoto ≥ 0.70–0.80 filtering — not at the exact-match boundary itself. This means a model may claim "clean" data (exact-match excluded) while still benefiting substantially from near-neighbor contamination.
 
-pl.seed_everything(42)
-dataset = RetrievalDataset(
-    spec_transform=SpecTokenizer(n_peaks=60),
-    mol_transform=MolFingerprinter(fp_size=4096),
-)
-data_module = MassSpecDataModule(dataset=dataset, batch_size=32, num_workers=4)
+**What to report in your review:**
+- What filtering criterion is declared in the model card?
+- Is this consistent with what the paper states?
+- Does the paper compare against baselines at the same filtering level?
 
-from massspecgym.models.retrieval import DeepSetsRetrieval  # model under review
-from pytorch_lightning import Trainer
-model = DeepSetsRetrieval.load_from_checkpoint("checkpoints/model_under_review.ckpt")
-Trainer(accelerator="gpu", devices=1).test(model, datamodule=data_module)
-# Expected output: hit_rate@1, hit_rate@5, hit_rate@20, mces@1
-```
+The leaderboard accepts exact-match exclusion as the minimum. If the criterion is weaker or unstated, request clarification before approval.
 
-## Constraints
+---
 
-- **No Metric Modification**: All metric computation must be delegated to the parent ABC. Any override of `on_batch_end()` that modifies metric logic is grounds for rejection.
-- **Data Safety Is Non-Negotiable**: A submission that fails the InChIKey sanity check (14-char matching) cannot be accepted. This applies to both direct leakage and transitive leakage through oracle components.
-- **Canonicalization Must Be Verified**: A spectrum-blind SMILES format classifier scoring substantially above random on the submission's candidate set is grounds for rejection until the artifact is removed.
-- **Formula Tier Integrity**: Results using formula predictors to pre-filter candidates must be reported under the bonus tier. Mixing tiers in comparison tables is grounds for rejection.
-- **MIST Batching Bug**: Any submission using MIST in batched mode without the $-\infty$ padding fix must be corrected before acceptance.
-- **Metric Pinning**: All metrics must use the specified implementations. Results computed with deviating implementations (wrong InChIKey layer, wrong fingerprint parameters, non-standard match thresholds) are not comparable to the leaderboard.
-- **Reproducibility Threshold**: Results must reproduce within 0.5 percentage points on the primary metric under the same seed.
-- **Official Split Only**: The benchmark split defined by `MassSpecDataModule` (default) must be used.
-- **Environment**: Review must be conducted in the `massspecgym` conda environment (Python 3.11).
+## Final approval checklist
+
+Before approving the PR, confirm:
+
+- [ ] Automated report has no hard failures (or failures have been resolved and re-reviewed)
+- [ ] All warnings have been signed off with a documented reason
+- [ ] Paper methods section consistent with model card
+- [ ] No implicit formula use in standard-tier submission (from reading the paper)
+- [ ] Pretraining data safety confirmed (parquet sanity check run or author confirmed)
+- [ ] If MIST encoder used: v1.5 fix confirmed or external repo verified
+- [ ] If MIST-CF or ICEBERG used: v1.5 data-safe version confirmed
+- [ ] All required metrics present with CIs
+- [ ] Method name in CSV matches model card exactly
+- [ ] `df_test_path` configured so per-sample predictions are saved (recommended)
+- [ ] Seed documented
+
+---
 
 ## References
 
-- Bushuiev et al., "MassSpecGym: A benchmark for the discovery and identification of molecules", *NeurIPS 2024 (Spotlight)*. [arXiv:2410.23326](https://doi.org/10.48550/arXiv.2410.23326)
-- Goldman et al., "Annotating metabolite mass spectra with domain-inspired chemical formula transformers", *Nature Machine Intelligence*, 2023. [DOI:10.1038/s42256-023-00708-3](https://doi.org/10.1038/s42256-023-00708-3)
-- Kapoor & Narayanan, "Leakage and the Reproducibility Crisis in Machine Learning-based Science", *Patterns*, 2023. [DOI:10.1016/j.patter.2023.100804](https://doi.org/10.1016/j.patter.2023.100804)
+- Bushuiev et al., "MassSpecGym: A benchmark for the discovery and identification of molecules", *NeurIPS 2024*. [arXiv:2410.23326](https://doi.org/10.48550/arXiv.2410.23326)
+- MassSpecGym v1.5 paper (manuscript.tex in this repo) — source for all failure modes and quantified impacts
+- `scripts/review_submission.py` — automated check implementations
+- `submissions/SUBMISSION_GUIDE.md` — submitter-facing instructions
