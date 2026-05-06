@@ -48,6 +48,31 @@ Create `submissions/<method_name>/model_card.yaml`. Copy and fill in [`submissio
 
 `<method_name>` must exactly match the `Method` value in your CSV row (spaces replaced with underscores).
 
+### 3. Code repository (optional but recommended)
+
+You may include your model's source code directly in the PR by placing it under:
+
+```
+submissions/<method_name>/<repo_name>/
+```
+
+For example:
+
+```
+submissions/My_Model/
+  model_card.yaml
+  my-model-repo/        ← your code here
+    train.py
+    eval.py
+    ...
+```
+
+When a local repository directory is present, the automated review will:
+- Run all static code checks (MIST bug, metric overrides, formula leakage, split detection) against the local files
+- Include the full source in the LLM narrative review instead of only the README
+
+If no local directory is provided, the review falls back to cloning `code_url` from the model card. Including local code is strongly encouraged — it enables a more thorough automated review and reduces the burden on human maintainers.
+
 ---
 
 ## Metric specifications

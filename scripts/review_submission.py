@@ -391,11 +391,28 @@ def _read_file_safe(p: Path) -> str:
         return ""
 
 
-def check_code_repo(report: ReviewReport, card: dict) -> Optional[Path]:
+def _find_local_repo(submission_dir: Path) -> Optional[Path]:
+    """Return the first subdirectory of submission_dir that looks like a repo."""
+    skip = {"__pycache__"}
+    for child in sorted(submission_dir.iterdir()):
+        if child.is_dir() and child.name not in skip and not child.name.startswith("."):
+            return child
+    return None
+
+
+def check_code_repo(report: ReviewReport, card: dict, submission_dir: Path) -> Optional[Path]:
+    # Prefer a local repo directory submitted alongside the model card.
+    local_repo = _find_local_repo(submission_dir)
+    if local_repo is not None:
+        _check(report, "CODE-ACCESS", Status.PASS,
+               f"Local repository found in submission: {local_repo.name}/")
+        return local_repo
+
     code_url = card.get("code_url", "")
     if not code_url:
         _check(report, "CODE-ACCESS", Status.FAIL,
-               "code_url not provided in model_card.yaml.", hard_fail=True)
+               "code_url not provided in model_card.yaml and no local repo directory found.",
+               hard_fail=True)
         return None
 
     parsed = urlparse(code_url)
@@ -680,6 +697,47 @@ def _fetch_github_readme(code_url: str) -> Optional[str]:
     return None
 
 
+def _collect_repo_context(repo_path: Path, max_chars: int = 40000) -> str:
+    """Read Python/config files from repo_path and return concatenated text, capped at max_chars."""
+    # Prioritize files likely to contain model/eval logic
+    PRIORITY_GLOBS = ["**/*.py", "**/*.yaml", "**/*.yml", "**/*.json", "**/*.sh", "**/*.md"]
+    SKIP_DIRS = {".git", "__pycache__", ".venv", "venv", "node_modules", ".mypy_cache"}
+
+    seen: set = set()
+    files: list[tuple[int, Path]] = []  # (priority, path)
+
+    for priority, glob in enumerate(PRIORITY_GLOBS):
+        for p in repo_path.rglob(glob):
+            if any(part in SKIP_DIRS for part in p.parts):
+                continue
+            if p in seen:
+                continue
+            seen.add(p)
+            files.append((priority, p))
+
+    files.sort(key=lambda x: (x[0], x[1]))
+
+    parts = []
+    total = 0
+    for _, p in files:
+        try:
+            text = p.read_text(errors="replace")
+        except Exception:
+            continue
+        rel = p.relative_to(repo_path)
+        header = f"\n### {rel}\n"
+        chunk = header + text
+        if total + len(chunk) > max_chars:
+            remaining = max_chars - total - len(header)
+            if remaining > 200:
+                parts.append(header + text[:remaining] + "\n[truncated]")
+            break
+        parts.append(chunk)
+        total += len(chunk)
+
+    return "".join(parts)
+
+
 def run_llm_review(report: ReviewReport, card: dict, submission_dir: Path) -> None:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -709,13 +767,22 @@ def run_llm_review(report: ReviewReport, card: dict, submission_dir: Path) -> No
                    f"Paper URL not accessible: {paper_url}. LLM review will proceed without paper text.")
 
     code_url = card.get("code_url", "")
-    readme_text = _fetch_github_readme(code_url) if code_url else None
-    if readme_text:
-        sections.append(f"## Code README (fetched from {code_url})\n{readme_text}")
-    elif code_url:
-        sections.append(f"## Code README\nCOULD NOT FETCH README from {code_url}")
-        _check(report, "LLM-CODE-ACCESS", Status.WARN,
-               f"Could not fetch README from code repository: {code_url}.")
+
+    # Prefer local repo dir over fetching README from remote
+    local_repo = _find_local_repo(submission_dir)
+    if local_repo is not None:
+        repo_context = _collect_repo_context(local_repo)
+        sections.append(
+            f"## Submitted repository code ({local_repo.name}/)\n{repo_context}"
+        )
+    else:
+        readme_text = _fetch_github_readme(code_url) if code_url else None
+        if readme_text:
+            sections.append(f"## Code README (fetched from {code_url})\n{readme_text}")
+        elif code_url:
+            sections.append(f"## Code README\nCOULD NOT FETCH README from {code_url}")
+            _check(report, "LLM-CODE-ACCESS", Status.WARN,
+                   f"Could not fetch README from code repository: {code_url}.")
 
     auto_report_summary = "\n".join(
         f"- {c.check_id}: {c.status} — {c.message}" for c in report.checks
@@ -790,7 +857,7 @@ def review(submission_dir: Path) -> ReviewReport:
     check_pretraining(report, card)
     check_smiles_canonicalization(report)
 
-    repo_path = check_code_repo(report, card)
+    repo_path = check_code_repo(report, card, submission_dir)
 
     check_mist_batching_bug(report, card, repo_path)
     check_metric_overrides(report, repo_path)
