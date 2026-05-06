@@ -3,7 +3,6 @@
 method_name: "DiffMS"
 paper_url: "https://arxiv.org/abs/2502.09571"
 code_url: "https://github.com/coleygroup/DiffMS"
-publication: "ICML 2025 (Proceedings of the 42nd International Conference on Machine Learning, PMLR 267)"
 random_seed: 42
 
 # Results entries
