@@ -15,7 +15,7 @@ from massspecgym.data.transforms import (
 )
 from massspecgym.models.base import Stage
 from massspecgym.models.retrieval import (
-    FingerprintFFNRetrieval, FromDictRetrieval, RandomRetrieval, DeepSetsRetrieval
+    FingerprintFFNRetrieval, FromDictRetrieval, RandomRetrieval, DeepSetsRetrieval, DreamsFingerprintRetrieval
 )
 from massspecgym.models.de_novo import SmilesTransformer, FRIGIDDecoder, MolForgeDecoder, DiffMSDecoder
 from massspecgym.models.tokenizers import SmilesBPETokenizer, SelfiesTokenizer
@@ -212,6 +212,14 @@ def main(args):
                 dropout=args.dropout,
                 **common_kwargs
             )
+        elif args.model == 'dreams':
+            if args.dreams_ckpt_path is None:
+                raise ValueError('--dreams_ckpt_path is required for --model dreams.')
+            model = DreamsFingerprintRetrieval(
+                dreams_ckpt_path=args.dreams_ckpt_path,
+                ssl_backbone_ckpt_path=args.dreams_ssl_backbone_ckpt_path,
+                **common_kwargs
+            )
         elif args.model == 'from_dict':
             model = FromDictRetrieval(
                 dct_path=args.dct_path,
@@ -331,6 +339,9 @@ def main(args):
     # Prepare data module to validate or test before training
     data_module.prepare_data()
     data_module.setup()
+
+    if args.model in {'dreams'} and not args.test_only:
+        raise ValueError('The `dreams` retrieval model is inference-only. Use --test_only (and optionally --debug).')
 
     if not args.test_only:
         # Validate before training
