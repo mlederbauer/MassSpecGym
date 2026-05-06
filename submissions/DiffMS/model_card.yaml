@@ -1,8 +1,10 @@
-# MassSpecGym Model Card Template
+# MassSpecGym Model Card
 # Identity
 method_name: "DiffMS"
 paper_url: "https://arxiv.org/abs/2502.09571"
 code_url: "https://github.com/coleygroup/DiffMS"
+publication: "ICML 2025 (Proceedings of the 42nd International Conference on Machine Learning, PMLR 267)"
+random_seed: 42
 
 # Results entries
 results:
@@ -19,17 +21,59 @@ uses_iceberg: false
 mist_cf_version: "v1.5_data_safe"
 iceberg_version: ""
 
+architecture_notes: >
+  DiffMS is an encoder-decoder model. The encoder is the MIST formula transformer
+  (Goldman et al., 2023b), pretrained on spectrum-to-fingerprint prediction using
+  NPLIB1 (CANOPUS) and MassSpecGym training splits only (no test/val exposure).
+  The decoder is a Graph Transformer (Dwivedi & Bresson, 2021) implementing discrete
+  graph diffusion (Vignac et al., 2023), pretrained on 2.8M fingerprint-structure pairs
+  from DSSTox, HMDB, COCONUT, and MOSES. At inference the model uses MIST-CF
+  (Goldman et al., 2023c) to predict the top-5 most likely molecular formulae, then
+  generates 100 candidate structures (20 per formula) and ranks by frequency.
+  The graph representation encodes heavy atoms only; hydrogen placement is implicit.
+  Bond types: no bond, single, double, triple, aromatic (k=5).
+
 # Pretraining data
 pretraining:
   used: true
-  description: "The diffusion decoder was pretrained on 2.8M fingerprint-structure pairs from DSSTox, HMDB, COCONUT, and MOSES[cite: 94, 238]. The spectrum encoder was pretrained to predict molecular fingerprints to extract implicit structural information[cite: 96, 228, 229]."
+  description: >
+    Two separate pretraining stages:
+    (1) Decoder pretraining: 2.8M fingerprint-structure pairs sampled from DSSTox (CCTE 2019),
+    HMDB (Wishart et al., 2021), COCONUT (Sorokina et al., 2021), and MOSES (Polykovskiy et al., 2020).
+    ALL NPLIB1 and MassSpecGym test and validation molecules are excluded from decoder pretraining
+    (see build_fp2mol_datasets.py). Stereochemistry is stripped (isomericSmiles=False) before InChI
+    conversion, so exclusion is applied on non-stereoisomeric structures.
+    (2) Encoder pretraining: the MIST spectrum encoder is pretrained on the same labeled
+    spectrum datasets used for end-to-end finetuning (NPLIB1/CANOPUS and MassSpecGym training
+    splits), predicting Morgan fingerprints from spectra. No external molecular structure data
+    is used for encoder pretraining.
   filtering_criterion: "exact_match"
   inchikey_layer_used: "27char"
   parquet_url: ""
+  filtering_notes: >
+    IMPORTANT FOR REVIEWERS: The exclusion logic in build_fp2mol_datasets.py (lines 151-161)
+    uses the full 27-character InChIKey (Chem.MolToInchiKey(m)[:27]) for both building the
+    exclusion set and checking pretraining molecules. This is exact-match on the full InChIKey
+    (connectivity + stereochemistry layer). However, stereochemistry is STRIPPED before InChI
+    conversion (isomericSmiles=False throughout), so in practice the 27-char key on a
+    non-stereoisomeric InChI is functionally equivalent to connectivity-layer (14-char) matching.
+    Tanimoto-based filtering (>=0.70) is NOT applied. Maintainer should verify whether the
+    minimum exact_match criterion is sufficient given that structurally similar molecules
+    (Tanimoto > 0.85) may remain in the pretraining set.
 
 # Evaluation setup
 uses_official_split: true
 custom_split_path: ""
 
+evaluation_notes: >
+  Metrics follow Bushuiev et al. (2024): Top-k accuracy (exact structure recovery),
+  Top-k maximum Tanimoto similarity (ECFP4, radius=2, 2048-bit), and Top-k minimum MCES
+  (Kretschmer et al., 2023, threshold=15, always_stronger_bound=True).
+  Results reported for k=1 and k=10. 100 molecules sampled per spectrum for ranking.
+  Ranking uses log-likelihood from beam search (width=100), following MSNovelist methodology.
+  Bootstrap confidence intervals are NOT reported in the paper (Table 1) and are currently
+  absent from the CSV. Maintainer must request CIs from authors or compute from per-sample
+  predictions before final merge.
+
 # Notes for reviewers
-notes: "DiffMS is a permutation-invariant diffusion model for de novo molecule generation[cite: 83]. It uses a transformer encoder for mass spectra and a discrete graph diffusion decoder restricted by heavy-atom composition[cite: 8]. Notably, 100% of its generated samples are valid molecules because of the graph-based representation[cite: 553, 554]. It achieves state-of-the-art performance on MassSpecGym, doubling the accuracy of prior methods[cite: 97, 282]."
+notes: ""

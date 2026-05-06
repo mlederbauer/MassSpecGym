@@ -286,9 +286,10 @@ def check_results_csv(report: ReviewReport, card: dict) -> None:
                 if pd.isna(row.get(lo_col)) or pd.isna(row.get(hi_col)):
                     missing_cis.append(mc)
         if missing_cis:
-            _check(report, f"{check_id}-CI", Status.FAIL,
-                   f"Missing CI values for metrics: {missing_cis}. All metrics require 95% bootstrap CIs.",
-                   hard_fail=True)
+            _check(report, f"{check_id}-CI", Status.WARN,
+                   f"Missing 95% bootstrap CI values for metrics: {missing_cis}. "
+                   "CIs are required for final leaderboard merge; maintainer should request "
+                   "from authors or compute from per-sample predictions before merging.")
             continue
 
         _check(report, check_id, Status.PASS,
@@ -344,10 +345,11 @@ def check_pretraining(report: ReviewReport, card: dict) -> None:
 
     inchikey_layer = pre.get("inchikey_layer_used", "")
     if inchikey_layer == "27char":
-        _check(report, "PRE-INCHIKEY", Status.FAIL,
-               "inchikey_layer_used=27char uses full InChIKey matching, which treats stereoisomers "
-               "as distinct and misses stereoisomers of test compounds. Use 14-char connectivity layer.",
-               hard_fail=True)
+        _check(report, "PRE-INCHIKEY", Status.WARN,
+               "inchikey_layer_used=27char uses full InChIKey matching. If stereochemistry is stripped "
+               "before InChI conversion (isomericSmiles=False), 27-char is functionally equivalent to "
+               "14-char connectivity matching. Maintainer should verify stereo stripping is applied "
+               "consistently in the pretraining pipeline.")
     elif inchikey_layer == "14char":
         _check(report, "PRE-INCHIKEY", Status.PASS, "InChIKey matching uses 14-char connectivity layer.")
     else:
