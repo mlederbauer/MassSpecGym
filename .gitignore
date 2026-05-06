@@ -143,3 +143,4 @@ wandb/
 # External codebases
 external/
 .claude/
+checkpoints/

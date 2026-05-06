@@ -3,6 +3,9 @@ from .random import RandomRetrieval
 from .deepsets import DeepSetsRetrieval
 from .fingerprint_ffn import FingerprintFFNRetrieval
 from .from_dict import FromDictRetrieval
+from .specbridge import SpecBridgeRetrieval
+from .mist_encoder import MistEncoderRetrieval
+from .dreams_encoder import DreamsFingerprintRetrieval
 
 __all__ = [
     "RetrievalMassSpecGymModel",
