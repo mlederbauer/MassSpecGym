@@ -40,7 +40,7 @@ jobs:
           # Find all submissions/ directories that were added or modified in this PR
           git diff --name-only origin/${{ github.base_ref }}...HEAD \
             | grep -E '^submissions/[^/]+/' \
-            | sed 's|/.*||' \
+            | sed 's|\(submissions/[^/]*\)/.*|\1|' \
             | sort -u \
             | grep -v '^submissions/template$' \
             > changed_submissions.txt || true
