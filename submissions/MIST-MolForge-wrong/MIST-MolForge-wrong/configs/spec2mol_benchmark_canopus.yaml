@@ -1,0 +1,42 @@
+data:
+  datadir: "data/canopus"
+  labels_file: "data/canopus/labels.tsv"
+  split_file: "data/canopus/splits/canopus_hplus_100_0.tsv"
+  spec_folder: "data/canopus/spec_files"
+  subform_folder: "data/canopus/subformulae/subformulae_default"
+
+mist_encoder:
+  checkpoint: "checkpoints/mist_canopus.pt"
+  hidden_size: 256
+  magma_modulo: 512
+  peak_attn_layers: 2
+  num_heads: 8
+  spectra_dropout: 0.1
+  output_size: 4096
+  form_embedder: "pos-cos"
+  set_pooling: "cls"
+  refine_layers: 4
+  pairwise_featurization: true
+  embed_instrument: false
+  inten_transform: "float"
+  inten_prob: 0.1
+  remove_prob: 0.5
+  cls_type: "ms1"
+  spec_features: "peakformula"
+  mol_features: "fingerprint"
+  top_layers: 1
+
+molforge:
+  root_dir: "MolForge"
+  checkpoint: "checkpoints/decoder_molforge.pth"
+  src_sp_model: "checkpoints/molforge_sp/combined_morgan4096_vocab_sp.model"
+  trg_sp_model: "checkpoints/molforge_sp/combined_smiles_vocab_sp_morgan4096.model"
+  src_seq_len: 104
+  trg_seq_len: 130
+  beam_size: 10
+  append_src_eos: false
+
+evaluation:
+  split: "test"
+  max_spectra: null
+
