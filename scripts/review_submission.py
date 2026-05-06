@@ -791,14 +791,28 @@ def run_llm_review(report: ReviewReport, card: dict, submission_dir: Path) -> No
 
     context = "\n\n".join(sections)
 
-    system_prompt = """You are an expert reviewer for the MassSpecGym benchmark, a leaderboard for machine learning models on tandem mass spectrometry tasks. Your job is to identify subtle evaluation issues that automated checks cannot catch.
-
-The three main failure categories to look for are:
-1. DATA LEAKAGE: pretraining data that overlaps with MassSpecGym test/val sets, or auxiliary components (MIST-CF, ICEBERG) trained on test data. Key detail: exact-match exclusion is insufficient — Tanimoto similarity filtering at >=0.70 is recommended.
-2. SHORTCUT LEARNING: SMILES canonicalization mismatches between ground truth and decoys (allows spectrum-blind classifiers to achieve >99% Recall@1), PubChem frequency bias in candidate sets.
-3. IMPLEMENTATION BUGS & METRIC DIVERGENCE: MIST encoder batching bug (attn += attn_mask instead of -inf fill, inflates de novo Top-1 by ~17pp), custom metric reimplementations that deviate from pinned MassSpecGym specs (14-char InChIKey, ECFP4 radius=2 2048-bit, MCES threshold=15 always_stronger_bound=True), custom data splits, missing confidence intervals.
-
-Be specific and actionable. If the paper mentions using ICEBERG or MIST-CF, flag which version and whether it could be the data-unsafe version. If the methods section describes formula-based filtering in a mass-based submission, flag it. If pretraining data sources are named but filtering is vague, flag it. If you cannot assess something due to missing information, say so explicitly."""
+    skill_md_path = REPO_ROOT / "skills" / "review" / "SKILL.md"
+    if skill_md_path.exists():
+        skill_md = skill_md_path.read_text()
+        # Strip YAML frontmatter if present
+        if skill_md.startswith("---"):
+            end = skill_md.find("---", 3)
+            skill_md = skill_md[end + 3:].lstrip() if end != -1 else skill_md
+        system_prompt = (
+            "You are an automated reviewer acting on behalf of the MassSpecGym maintainers. "
+            "The following is the maintainer review guide — follow it as your instructions.\n\n"
+            + skill_md
+            + "\n\nYou have access to the submitted code (when provided). "
+            "For every metric the submission reports, trace the actual computation path in the code "
+            "and cite the specific file and line. If the code delegates to MassSpecGym parent ABCs "
+            "without overriding, say so explicitly — that is the correct pattern."
+        )
+    else:
+        system_prompt = (
+            "You are an expert reviewer for the MassSpecGym benchmark. "
+            "Identify data leakage, shortcut learning, metric implementation bugs, "
+            "and tier integrity issues. Be specific and cite file:line when code is available."
+        )
 
     user_prompt = f"""Review this MassSpecGym leaderboard submission for evaluation issues.
 
@@ -806,8 +820,9 @@ Be specific and actionable. If the paper mentions using ICEBERG or MIST-CF, flag
 
 Provide a structured review with:
 1. A one-sentence verdict (APPROVE / WARN / REJECT)
-2. Specific issues found, if any, with references to the paper/code evidence
-3. Items that require human maintainer judgment
+2. Metric implementation audit: for each reported metric, state whether the implementation matches the MassSpecGym spec (cite file:line if code is available), or flag the deviation
+3. Other specific issues found, if any, with references to the paper/code evidence
+4. Items that require human maintainer judgment
 4. Items that look clean
 
 Be concise. Flag real issues only — do not invent problems that are not evidenced."""
