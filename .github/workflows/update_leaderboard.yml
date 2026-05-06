@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -135,7 +137,7 @@ jobs:
           with open("leaderboard_validation.json", "w") as f:
               json.dump(report, f, indent=2)
 
-          print("\n=== Leaderboard CSV Validation ===")
+          print("\nLeaderboard CSV Validation")
           for line in summary_lines:
               print(line)
           if warnings:

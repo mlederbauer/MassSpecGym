@@ -140,10 +140,7 @@ dmypy.json
 # W&B
 wandb/
 
-<<<<<<< dev/v1.5
 # External codebases
 external/
-=======
-# Models
+.claude/
 checkpoints/
->>>>>>> main
