@@ -1,0 +1,35 @@
+# MassSpecGym Model Card Template
+# Identity
+method_name: "DiffMS"
+paper_url: "https://arxiv.org/abs/2502.09571"
+code_url: "https://github.com/coleygroup/DiffMS"
+
+# Results entries
+results:
+  - task: "de_novo"
+    challenge: "bonus"
+    results_csv: "results/de_novo_bonus.csv"
+    uses_formula_at_inference: true
+
+# Model architecture
+uses_mist_encoder: true
+uses_mist_cf: true
+uses_iceberg: false
+
+mist_cf_version: "v1.5_data_safe"
+iceberg_version: ""
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "The diffusion decoder was pretrained on 2.8M fingerprint-structure pairs from DSSTox, HMDB, COCONUT, and MOSES[cite: 94, 238]. The spectrum encoder was pretrained to predict molecular fingerprints to extract implicit structural information[cite: 96, 228, 229]."
+  filtering_criterion: "exact_match"
+  inchikey_layer_used: "27char"
+  parquet_url: ""
+
+# Evaluation setup
+uses_official_split: true
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "DiffMS is a permutation-invariant diffusion model for de novo molecule generation[cite: 83]. It uses a transformer encoder for mass spectra and a discrete graph diffusion decoder restricted by heavy-atom composition[cite: 8]. Notably, 100% of its generated samples are valid molecules because of the graph-based representation[cite: 553, 554]. It achieves state-of-the-art performance on MassSpecGym, doubling the accuracy of prior methods[cite: 97, 282]."
