@@ -132,8 +132,8 @@ class ReviewReport:
 
     def to_markdown(self) -> str:
         lines = []
-        status_icon = "🔴 **BLOCKED**" if self.blocked else (
-            "🟡 **WARNINGS**" if self.warnings else "🟢 **PASSED**"
+        status_icon = "**BLOCKED**" if self.blocked else (
+            "**WARNINGS**" if self.warnings else "**PASSED**"
         )
         lines.append(f"## MassSpecGym Submission Review: `{self.method_name}`")
         lines.append(f"\n**Overall status:** {status_icon}\n")
@@ -144,31 +144,31 @@ class ReviewReport:
         skips = [c for c in self.checks if c.status == Status.SKIP]
 
         if hard_fails:
-            lines.append("### ❌ Hard failures (must be resolved before merge)\n")
+            lines.append("### Hard failures (must be resolved before merge)\n")
             for c in hard_fails:
                 lines.append(f"- **{c.check_id}**: {c.message}")
                 if c.details:
                     lines.append(f"  ```\n{textwrap.indent(c.details, '  ')}\n  ```")
 
         if warnings:
-            lines.append("\n### ⚠️ Warnings (require maintainer sign-off)\n")
+            lines.append("\n### Warnings (require maintainer sign-off)\n")
             for c in warnings:
                 lines.append(f"- **{c.check_id}**: {c.message}")
                 if c.details:
                     lines.append(f"  ```\n{textwrap.indent(c.details, '  ')}\n  ```")
 
         if passes:
-            lines.append("\n### ✅ Passed checks\n")
+            lines.append("\n### Passed checks\n")
             for c in passes:
                 lines.append(f"- **{c.check_id}**: {c.message}")
 
         if skips:
-            lines.append("\n### ⏭️ Skipped checks\n")
+            lines.append("\n### Skipped checks\n")
             for c in skips:
                 lines.append(f"- **{c.check_id}**: {c.message}")
 
         if self.llm_review:
-            lines.append(f"\n### 🤖 LLM Narrative Review ({self.llm_status})\n")
+            lines.append(f"\n### LLM Narrative Review ({self.llm_status})\n")
             lines.append(self.llm_review)
 
         return "\n".join(lines)
@@ -212,7 +212,7 @@ def check_model_card_fields(report: ReviewReport, card: dict) -> None:
                "model_card.yaml 'results' must be a non-empty list.", hard_fail=True)
         return
     for i, entry in enumerate(card["results"]):
-        for f in ["task", "challenge", "results_csv"]:
+        for f in ["task", "challenge"]:
             if not entry.get(f):
                 _check(report, "MC-FIELDS", Status.FAIL,
                        f"results[{i}] missing required field '{f}'.", hard_fail=True)
@@ -227,6 +227,15 @@ def check_model_card_fields(report: ReviewReport, card: dict) -> None:
                    f"results[{i}].challenge must be standard|bonus, got '{entry['challenge']}'.",
                    hard_fail=True)
             return
+        if not isinstance(entry.get("metrics"), dict) or not entry["metrics"]:
+            _check(report, "MC-FIELDS", Status.FAIL,
+                   f"results[{i}] missing required 'metrics' mapping.", hard_fail=True)
+            return
+        for required_meta in ["paper", "doi", "publication_date"]:
+            if not entry.get(required_meta):
+                _check(report, "MC-FIELDS", Status.FAIL,
+                       f"results[{i}] missing required field '{required_meta}'.", hard_fail=True)
+                return
     if card.get("random_seed") is None:
         _check(report, "MC-SEED", Status.WARN,
                "random_seed not specified in model_card.yaml. Document the seed used for reported results.")
@@ -235,65 +244,41 @@ def check_model_card_fields(report: ReviewReport, card: dict) -> None:
     _check(report, "MC-FIELDS", Status.PASS, "All required model_card fields present.")
 
 
-def check_results_csv(report: ReviewReport, card: dict) -> None:
+def check_metrics_in_card(report: ReviewReport, card: dict) -> None:
     method_name = card["method_name"]
     for i, entry in enumerate(card.get("results", [])):
         task = entry.get("task", "")
         challenge = entry.get("challenge", "")
-        csv_path_rel = entry.get("results_csv", "")
-        check_id = f"CSV-{i}"
+        metrics = entry.get("metrics", {}) or {}
+        check_id = f"METRICS-{i}"
 
-        csv_path = REPO_ROOT / csv_path_rel
-        if not csv_path.exists():
-            _check(report, check_id, Status.FAIL,
-                   f"results_csv '{csv_path_rel}' not found.", hard_fail=True)
-            continue
-
-        expected_csv = TASK_CSV_MAP.get((task, challenge))
-        if expected_csv and csv_path_rel != expected_csv:
-            _check(report, f"{check_id}-TIER", Status.FAIL,
-                   f"task={task}/challenge={challenge} should use '{expected_csv}', got '{csv_path_rel}'.",
-                   hard_fail=True)
-            continue
-
-        df = pd.read_csv(csv_path)
-        row_mask = df["Method"].astype(str) == str(method_name)
-        if row_mask.sum() == 0:
-            _check(report, check_id, Status.FAIL,
-                   f"No row with Method='{method_name}' found in {csv_path_rel}.", hard_fail=True)
-            continue
-
-        required_cols = REQUIRED_COLUMNS.get(task, [])
-        missing_cols = [c for c in required_cols if c not in df.columns]
-        if missing_cols:
-            _check(report, f"{check_id}-COLS", Status.FAIL,
-                   f"Required columns missing from {csv_path_rel}: {missing_cols}", hard_fail=True)
-            continue
-
-        row = df[row_mask].iloc[0]
         metric_cols = METRIC_COLUMNS.get(task, [])
-        null_metrics = [c for c in metric_cols if pd.isna(row.get(c))]
+        if not metric_cols:
+            _check(report, check_id, Status.FAIL,
+                   f"results[{i}]: unknown task '{task}'.", hard_fail=True)
+            continue
+
+        null_metrics = [c for c in metric_cols if metrics.get(c) is None]
         if null_metrics:
             _check(report, f"{check_id}-NULLS", Status.FAIL,
-                   f"Null metric values for Method='{method_name}': {null_metrics}", hard_fail=True)
+                   f"results[{i}]: missing or null metric values for Method='{method_name}': {null_metrics}",
+                   hard_fail=True)
             continue
 
         missing_cis = []
         for mc in metric_cols:
-            lo_col = f"{mc} CI Low"
-            hi_col = f"{mc} CI High"
-            if lo_col in df.columns and hi_col in df.columns:
-                if pd.isna(row.get(lo_col)) or pd.isna(row.get(hi_col)):
-                    missing_cis.append(mc)
+            lo = metrics.get(f"{mc} CI Low")
+            hi = metrics.get(f"{mc} CI High")
+            if lo is None or hi is None:
+                missing_cis.append(mc)
         if missing_cis:
             _check(report, f"{check_id}-CI", Status.WARN,
-                   f"Missing 95% bootstrap CI values for metrics: {missing_cis}. "
-                   "CIs are required for final leaderboard merge; maintainer should request "
-                   "from authors or compute from per-sample predictions before merging.")
+                   f"results[{i}]: missing 95% bootstrap CI values for: {missing_cis}. "
+                   "CIs are required for leaderboard merge.")
             continue
 
         _check(report, check_id, Status.PASS,
-               f"CSV row valid: task={task}, challenge={challenge}, {csv_path_rel}.")
+               f"Metrics valid: task={task}, challenge={challenge}, method='{method_name}'.")
 
 
 def check_tier_integrity(report: ReviewReport, card: dict) -> None:
@@ -791,14 +776,30 @@ def run_llm_review(report: ReviewReport, card: dict, submission_dir: Path) -> No
 
     context = "\n\n".join(sections)
 
-    system_prompt = """You are an expert reviewer for the MassSpecGym benchmark, a leaderboard for machine learning models on tandem mass spectrometry tasks. Your job is to identify subtle evaluation issues that automated checks cannot catch.
-
-The three main failure categories to look for are:
-1. DATA LEAKAGE: pretraining data that overlaps with MassSpecGym test/val sets, or auxiliary components (MIST-CF, ICEBERG) trained on test data. Key detail: exact-match exclusion is insufficient — Tanimoto similarity filtering at >=0.70 is recommended.
-2. SHORTCUT LEARNING: SMILES canonicalization mismatches between ground truth and decoys (allows spectrum-blind classifiers to achieve >99% Recall@1), PubChem frequency bias in candidate sets.
-3. IMPLEMENTATION BUGS & METRIC DIVERGENCE: MIST encoder batching bug (attn += attn_mask instead of -inf fill, inflates de novo Top-1 by ~17pp), custom metric reimplementations that deviate from pinned MassSpecGym specs (14-char InChIKey, ECFP4 radius=2 2048-bit, MCES threshold=15 always_stronger_bound=True), custom data splits, missing confidence intervals.
-
-Be specific and actionable. If the paper mentions using ICEBERG or MIST-CF, flag which version and whether it could be the data-unsafe version. If the methods section describes formula-based filtering in a mass-based submission, flag it. If pretraining data sources are named but filtering is vague, flag it. If you cannot assess something due to missing information, say so explicitly."""
+    skill_md_path = REPO_ROOT / "skills" / "review" / "SKILL.md"
+    if skill_md_path.exists():
+        skill_md = skill_md_path.read_text()
+        # Strip YAML frontmatter if present
+        if skill_md.startswith("---"):
+            end = skill_md.find("---", 3)
+            skill_md = skill_md[end + 3:].lstrip() if end != -1 else skill_md
+        system_prompt = (
+            "You are an automated reviewer acting on behalf of the MassSpecGym maintainers. "
+            "The following is the maintainer review guide — follow it as your instructions.\n\n"
+            + skill_md
+            + "\n\nYou have access to the submitted code (when provided). "
+            "For every metric the submission reports, trace the actual computation path in the code "
+            "and cite the specific file and line. If the code delegates to MassSpecGym parent ABCs "
+            "without overriding, say so explicitly — that is the correct pattern. "
+            "Do not use emoji in your response. Use plain text only."
+        )
+    else:
+        system_prompt = (
+            "You are an expert reviewer for the MassSpecGym benchmark. "
+            "Identify data leakage, shortcut learning, metric implementation bugs, "
+            "and tier integrity issues. Be specific and cite file:line when code is available. "
+            "Do not use emoji in your response. Use plain text only."
+        )
 
     user_prompt = f"""Review this MassSpecGym leaderboard submission for evaluation issues.
 
@@ -806,11 +807,12 @@ Be specific and actionable. If the paper mentions using ICEBERG or MIST-CF, flag
 
 Provide a structured review with:
 1. A one-sentence verdict (APPROVE / WARN / REJECT)
-2. Specific issues found, if any, with references to the paper/code evidence
-3. Items that require human maintainer judgment
+2. Metric implementation audit: for each reported metric, state whether the implementation matches the MassSpecGym spec (cite file:line if code is available), or flag the deviation
+3. Other specific issues found, if any, with references to the paper/code evidence
+4. Items that require human maintainer judgment
 4. Items that look clean
 
-Be concise. Flag real issues only — do not invent problems that are not evidenced."""
+Be concise. Flag real issues only — do not invent problems that are not evidenced. Do not use emoji."""
 
     client = anthropic.Anthropic(api_key=api_key)
     try:
@@ -852,7 +854,7 @@ def review(submission_dir: Path) -> ReviewReport:
         report.method_name = card["method_name"]
 
     check_model_card_fields(report, card)
-    check_results_csv(report, card)
+    check_metrics_in_card(report, card)
     check_tier_integrity(report, card)
     check_pretraining(report, card)
     check_smiles_canonicalization(report)

@@ -6,7 +6,6 @@ on:
     types: [opened, synchronize, reopened, labeled]
     paths:
       - "submissions/**"
-      - "results/*.csv"
 
 jobs:
   review:
@@ -88,7 +87,7 @@ jobs:
             const path = require('path');
 
             const outputDir = 'review_outputs';
-            let combinedBody = '## 🔬 MassSpecGym Automated Submission Review\n\n';
+            let combinedBody = '## MassSpecGym Automated Submission Review\n\n';
 
             const exitCodeFile = path.join(outputDir, 'exit_code.txt');
             const exitCode = fs.existsSync(exitCodeFile)
@@ -96,9 +95,9 @@ jobs:
               : 0;
 
             if (exitCode !== 0) {
-              combinedBody += '> ⛔ **One or more hard failures detected. This PR cannot be merged until they are resolved.**\n\n';
+              combinedBody += '> **BLOCKED: One or more hard failures detected. This PR cannot be merged until they are resolved.**\n\n';
             } else {
-              combinedBody += '> ✅ No hard failures. Maintainer review required for any warnings.\n\n';
+              combinedBody += '> No hard failures. Maintainer review required for any warnings.\n\n';
             }
 
             const mdFiles = fs.readdirSync(outputDir).filter(f => f.endsWith('_summary.md'));
