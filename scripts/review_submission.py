@@ -146,14 +146,14 @@ class ReviewReport:
         if hard_fails:
             lines.append("### Hard failures (must be resolved before merge)\n")
             for c in hard_fails:
-                lines.append(f"- **{c.check_id}**: {c.message}")
+                lines.append(f"- 🔴 **{c.check_id}**: {c.message}")
                 if c.details:
                     lines.append(f"  ```\n{textwrap.indent(c.details, '  ')}\n  ```")
 
         if warnings:
             lines.append("\n### Warnings (require maintainer sign-off)\n")
             for c in warnings:
-                lines.append(f"- **{c.check_id}**: {c.message}")
+                lines.append(f"- 🟡 **{c.check_id}**: {c.message}")
                 if c.details:
                     lines.append(f"  ```\n{textwrap.indent(c.details, '  ')}\n  ```")
 
@@ -330,11 +330,12 @@ def check_pretraining(report: ReviewReport, card: dict) -> None:
 
     inchikey_layer = pre.get("inchikey_layer_used", "")
     if inchikey_layer == "27char":
-        _check(report, "PRE-INCHIKEY", Status.WARN,
+        _check(report, "PRE-INCHIKEY", Status.FAIL,
                "inchikey_layer_used=27char uses full InChIKey matching. If stereochemistry is stripped "
                "before InChI conversion (isomericSmiles=False), 27-char is functionally equivalent to "
-               "14-char connectivity matching. Maintainer should verify stereo stripping is applied "
-               "consistently in the pretraining pipeline.")
+               "14-char connectivity matching. Maintainer must verify stereo stripping is applied "
+               "consistently in the pretraining pipeline.",
+               hard_fail=True)
     elif inchikey_layer == "14char":
         _check(report, "PRE-INCHIKEY", Status.PASS, "InChIKey matching uses 14-char connectivity layer.")
     else:
@@ -423,9 +424,10 @@ def check_mist_batching_bug(report: ReviewReport, card: dict, repo_path: Optiona
         _check(report, "I1-MIST-BUG", Status.SKIP, "uses_mist_encoder=false, check skipped.")
         return
     if repo_path is None:
-        _check(report, "I1-MIST-BUG", Status.WARN,
+        _check(report, "I1-MIST-BUG", Status.FAIL,
                "uses_mist_encoder=true but repository not accessible. "
-               "Maintainer must verify the -inf attention mask fix is present.")
+               "Cannot verify -inf attention mask fix. Provide accessible code repository.",
+               hard_fail=True)
         return
 
     py_files = _collect_python_files(repo_path)
