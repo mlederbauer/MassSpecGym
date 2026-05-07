@@ -212,7 +212,7 @@ def check_model_card_fields(report: ReviewReport, card: dict) -> None:
                "model_card.yaml 'results' must be a non-empty list.", hard_fail=True)
         return
     for i, entry in enumerate(card["results"]):
-        for f in ["task", "challenge", "results_csv"]:
+        for f in ["task", "challenge"]:
             if not entry.get(f):
                 _check(report, "MC-FIELDS", Status.FAIL,
                        f"results[{i}] missing required field '{f}'.", hard_fail=True)
@@ -227,6 +227,15 @@ def check_model_card_fields(report: ReviewReport, card: dict) -> None:
                    f"results[{i}].challenge must be standard|bonus, got '{entry['challenge']}'.",
                    hard_fail=True)
             return
+        if not isinstance(entry.get("metrics"), dict) or not entry["metrics"]:
+            _check(report, "MC-FIELDS", Status.FAIL,
+                   f"results[{i}] missing required 'metrics' mapping.", hard_fail=True)
+            return
+        for required_meta in ["paper", "doi", "publication_date"]:
+            if not entry.get(required_meta):
+                _check(report, "MC-FIELDS", Status.FAIL,
+                       f"results[{i}] missing required field '{required_meta}'.", hard_fail=True)
+                return
     if card.get("random_seed") is None:
         _check(report, "MC-SEED", Status.WARN,
                "random_seed not specified in model_card.yaml. Document the seed used for reported results.")
@@ -235,65 +244,41 @@ def check_model_card_fields(report: ReviewReport, card: dict) -> None:
     _check(report, "MC-FIELDS", Status.PASS, "All required model_card fields present.")
 
 
-def check_results_csv(report: ReviewReport, card: dict) -> None:
+def check_metrics_in_card(report: ReviewReport, card: dict) -> None:
     method_name = card["method_name"]
     for i, entry in enumerate(card.get("results", [])):
         task = entry.get("task", "")
         challenge = entry.get("challenge", "")
-        csv_path_rel = entry.get("results_csv", "")
-        check_id = f"CSV-{i}"
+        metrics = entry.get("metrics", {}) or {}
+        check_id = f"METRICS-{i}"
 
-        csv_path = REPO_ROOT / csv_path_rel
-        if not csv_path.exists():
-            _check(report, check_id, Status.FAIL,
-                   f"results_csv '{csv_path_rel}' not found.", hard_fail=True)
-            continue
-
-        expected_csv = TASK_CSV_MAP.get((task, challenge))
-        if expected_csv and csv_path_rel != expected_csv:
-            _check(report, f"{check_id}-TIER", Status.FAIL,
-                   f"task={task}/challenge={challenge} should use '{expected_csv}', got '{csv_path_rel}'.",
-                   hard_fail=True)
-            continue
-
-        df = pd.read_csv(csv_path)
-        row_mask = df["Method"].astype(str) == str(method_name)
-        if row_mask.sum() == 0:
-            _check(report, check_id, Status.FAIL,
-                   f"No row with Method='{method_name}' found in {csv_path_rel}.", hard_fail=True)
-            continue
-
-        required_cols = REQUIRED_COLUMNS.get(task, [])
-        missing_cols = [c for c in required_cols if c not in df.columns]
-        if missing_cols:
-            _check(report, f"{check_id}-COLS", Status.FAIL,
-                   f"Required columns missing from {csv_path_rel}: {missing_cols}", hard_fail=True)
-            continue
-
-        row = df[row_mask].iloc[0]
         metric_cols = METRIC_COLUMNS.get(task, [])
-        null_metrics = [c for c in metric_cols if pd.isna(row.get(c))]
+        if not metric_cols:
+            _check(report, check_id, Status.FAIL,
+                   f"results[{i}]: unknown task '{task}'.", hard_fail=True)
+            continue
+
+        null_metrics = [c for c in metric_cols if metrics.get(c) is None]
         if null_metrics:
             _check(report, f"{check_id}-NULLS", Status.FAIL,
-                   f"Null metric values for Method='{method_name}': {null_metrics}", hard_fail=True)
+                   f"results[{i}]: missing or null metric values for Method='{method_name}': {null_metrics}",
+                   hard_fail=True)
             continue
 
         missing_cis = []
         for mc in metric_cols:
-            lo_col = f"{mc} CI Low"
-            hi_col = f"{mc} CI High"
-            if lo_col in df.columns and hi_col in df.columns:
-                if pd.isna(row.get(lo_col)) or pd.isna(row.get(hi_col)):
-                    missing_cis.append(mc)
+            lo = metrics.get(f"{mc} CI Low")
+            hi = metrics.get(f"{mc} CI High")
+            if lo is None or hi is None:
+                missing_cis.append(mc)
         if missing_cis:
             _check(report, f"{check_id}-CI", Status.WARN,
-                   f"Missing 95% bootstrap CI values for metrics: {missing_cis}. "
-                   "CIs are required for final leaderboard merge; maintainer should request "
-                   "from authors or compute from per-sample predictions before merging.")
+                   f"results[{i}]: missing 95% bootstrap CI values for: {missing_cis}. "
+                   "CIs are required for leaderboard merge.")
             continue
 
         _check(report, check_id, Status.PASS,
-               f"CSV row valid: task={task}, challenge={challenge}, {csv_path_rel}.")
+               f"Metrics valid: task={task}, challenge={challenge}, method='{method_name}'.")
 
 
 def check_tier_integrity(report: ReviewReport, card: dict) -> None:
@@ -869,7 +854,7 @@ def review(submission_dir: Path) -> ReviewReport:
         report.method_name = card["method_name"]
 
     check_model_card_fields(report, card)
-    check_results_csv(report, card)
+    check_metrics_in_card(report, card)
     check_tier_integrity(report, card)
     check_pretraining(report, card)
     check_smiles_canonicalization(report)
