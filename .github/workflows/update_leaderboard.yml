@@ -2,22 +2,21 @@ name: Update Leaderboard
 
 on:
   push:
-    branches: [main, feat/llm-skills]
+    branches: [main]
     paths:
-      - "results/*.csv"
       - "submissions/**"
 
 jobs:
-  validate-and-update:
+  regenerate-csvs:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      issues: write
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: false
 
       - name: Set up Python
@@ -30,221 +29,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas pyyaml
 
-      - name: Validate all results CSVs
-        id: validate
+      - name: Regenerate results CSVs from model cards
+        run: python scripts/generate_results_csvs.py
+
+      - name: Commit updated CSVs if changed
         run: |
-          python - <<'EOF'
-          import json
-          import sys
-          from pathlib import Path
-          import pandas as pd
-
-          REPO = Path(".")
-
-          REQUIRED_COLUMNS = {
-              "de_novo": [
-                  "Method",
-                  "Top-1 Accuracy", "Top-1 Accuracy CI Low", "Top-1 Accuracy CI High",
-                  "Top-1 MCES", "Top-1 MCES CI Low", "Top-1 MCES CI High",
-                  "Top-1 Tanimoto", "Top-1 Tanimoto CI Low", "Top-1 Tanimoto CI High",
-                  "Top-10 Accuracy", "Top-10 Accuracy CI Low", "Top-10 Accuracy CI High",
-                  "Top-10 MCES", "Top-10 MCES CI Low", "Top-10 MCES CI High",
-                  "Top-10 Tanimoto", "Top-10 Tanimoto CI Low", "Top-10 Tanimoto CI High",
-                  "Paper", "DOI", "Comment", "Publication date",
-              ],
-              "retrieval": [
-                  "Method",
-                  "Hit rate @ 1", "Hit rate @ 1 CI Low", "Hit rate @ 1 CI High",
-                  "Hit rate @ 5", "Hit rate @ 5 CI Low", "Hit rate @ 5 CI High",
-                  "Hit rate @ 20", "Hit rate @ 20 CI Low", "Hit rate @ 20 CI High",
-                  "MCES @ 1", "MCES @ 1 CI Low", "MCES @ 1 CI High",
-                  "Paper", "DOI", "Comment", "Publication date",
-              ],
-              "simulation": [
-                  "Method",
-                  "Cosine Similarity", "Cosine Similarity CI Low", "Cosine Similarity CI High",
-                  "Jensen-Shannon Similarity", "Jensen-Shannon Similarity CI Low", "Jensen-Shannon Similarity CI High",
-                  "Hit rate @ 1", "Hit rate @ 1 CI Low", "Hit rate @ 1 CI High",
-                  "Hit rate @ 5", "Hit rate @ 5 CI Low", "Hit rate @ 5 CI High",
-                  "Hit rate @ 20", "Hit rate @ 20 CI Low", "Hit rate @ 20 CI High",
-                  "Paper", "DOI", "Comment", "Publication date",
-              ],
-          }
-
-          CSV_TASK_MAP = {
-              "de_novo.csv": "de_novo",
-              "de_novo_bonus.csv": "de_novo",
-              "retrieval.csv": "retrieval",
-              "retrieval_bonus.csv": "retrieval",
-              "simulation.csv": "simulation",
-              "simulation_bonus.csv": "simulation",
-          }
-
-          # Metrics that should have CIs (all numeric non-metadata columns)
-          METADATA_COLS = {"Method", "Paper", "DOI", "Comment", "Publication date"}
-
-          errors = []
-          warnings = []
-          summary_lines = []
-
-          for csv_file in sorted((REPO / "results").glob("*.csv")):
-              task = CSV_TASK_MAP.get(csv_file.name)
-              if task is None:
-                  warnings.append(f"{csv_file.name}: unrecognised filename, skipping.")
-                  continue
-
-              try:
-                  df = pd.read_csv(csv_file)
-              except Exception as e:
-                  errors.append(f"{csv_file.name}: could not parse CSV: {e}")
-                  continue
-
-              required = REQUIRED_COLUMNS[task]
-              missing = [c for c in required if c not in df.columns]
-              if missing:
-                  errors.append(f"{csv_file.name}: missing required columns: {missing}")
-                  continue
-
-              # Check for duplicate Method names
-              dupes = df[df.duplicated("Method", keep=False)]["Method"].unique().tolist()
-              if dupes:
-                  errors.append(f"{csv_file.name}: duplicate Method entries: {dupes}")
-
-              # Check CI coverage for non-baseline rows
-              metric_cols = [
-                  c for c in df.columns
-                  if c not in METADATA_COLS
-                  and " CI Low" not in c
-                  and " CI High" not in c
-                  and pd.api.types.is_numeric_dtype(df[c])
-              ]
-              for _, row in df.iterrows():
-                  method = row["Method"]
-                  for mc in metric_cols:
-                      if pd.notna(row.get(mc)):
-                          lo = row.get(f"{mc} CI Low")
-                          hi = row.get(f"{mc} CI High")
-                          if pd.isna(lo) or pd.isna(hi):
-                              warnings.append(
-                                  f"{csv_file.name}: Method='{method}', metric='{mc}': "
-                                  "CI Low/High missing."
-                              )
-
-              n_methods = len(df)
-              summary_lines.append(f"  {csv_file.name}: {n_methods} entries, {len(metric_cols)} metrics — OK")
-
-          report = {"errors": errors, "warnings": warnings, "summary": summary_lines}
-          with open("leaderboard_validation.json", "w") as f:
-              json.dump(report, f, indent=2)
-
-          print("\nLeaderboard CSV Validation")
-          for line in summary_lines:
-              print(line)
-          if warnings:
-              print(f"\nWarnings ({len(warnings)}):")
-              for w in warnings:
-                  print(f"  ⚠  {w}")
-          if errors:
-              print(f"\nErrors ({len(errors)}):")
-              for e in errors:
-                  print(f"  ✗  {e}")
-              sys.exit(1)
-          else:
-              print("\nAll CSVs valid.")
-          EOF
-
-      - name: Check model card coverage
-        run: |
-          python - <<'EOF'
-          import sys
-          from pathlib import Path
-          import pandas as pd
-          import yaml
-
-          REPO = Path(".")
-          results_dir = REPO / "results"
-          submissions_dir = REPO / "submissions"
-
-          # Collect all Method names from all CSVs
-          all_methods = set()
-          for csv_file in results_dir.glob("*.csv"):
-              try:
-                  df = pd.read_csv(csv_file)
-                  if "Method" in df.columns:
-                      all_methods.update(df["Method"].dropna().astype(str).tolist())
-              except Exception:
-                  pass
-
-          # Collect methods that have a model card
-          carded_methods = set()
-          for card_path in submissions_dir.rglob("model_card.yaml"):
-              if "template" in card_path.parts:
-                  continue
-              try:
-                  with open(card_path) as f:
-                      card = yaml.safe_load(f)
-                  if card and card.get("method_name"):
-                      carded_methods.add(card["method_name"])
-              except Exception:
-                  pass
-
-          uncarded = all_methods - carded_methods
-          # Filter out known baselines that don't need model cards
-          known_baselines = {
-              "Random", "Random chemical generation", "Precursor m/z",
-              "DeepSets", "Fingerprint FFN", "DeepSets + Fourier features",
-              "FFN Fingerprint", "SMILES Transformer", "SELFIES Transformer",
-          }
-          uncarded -= known_baselines
-
-          if uncarded:
-              print(f"WARNING: {len(uncarded)} methods in results CSVs have no model card:")
-              for m in sorted(uncarded):
-                  print(f"  - {m}")
-              print("These were accepted before the model card requirement. New submissions must include one.")
-          else:
-              print("All non-baseline methods have model cards.")
-          EOF
-
-      - name: Upload validation artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: leaderboard-validation
-          path: leaderboard_validation.json
-          retention-days: 30
-
-      - name: Post failure issue if validation failed
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let report = {};
-            try {
-              report = JSON.parse(fs.readFileSync('leaderboard_validation.json', 'utf8'));
-            } catch (e) {
-              report = { errors: ['Could not read validation report.'], warnings: [] };
-            }
-
-            const body = [
-              '## ⚠️ Leaderboard CSV Validation Failed',
-              '',
-              `Triggered by commit: ${context.sha.substring(0, 8)}`,
-              '',
-              '### Errors',
-              ...report.errors.map(e => `- ${e}`),
-              '',
-              '### Warnings',
-              ...report.warnings.map(w => `- ${w}`),
-              '',
-              '_Fix the errors above and push to main. The leaderboard will not update until validation passes._',
-            ].join('\n');
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Leaderboard validation failed (${context.sha.substring(0, 8)})`,
-              body: body,
-              labels: ['leaderboard', 'bug'],
-            });
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add results/*.csv
+          if git diff --cached --quiet; then
+            echo "No CSV changes to commit."
+          else
+            git commit -m "leaderboard: regenerate results CSVs from model cards [skip ci]"
+            git push
+          fi
