@@ -1,66 +1,73 @@
 # MassSpecGym Model Card
 # Identity
-method_name: "MIST + MOLFORGE"
-paper_url: ""
-code_url: ""
-random_seed: null # Not explicitly stated in the text [cite: 1-221]
+method_name: "MIST + MolForge"
+paper_url: "https://arxiv.org/abs/2508.04180"
+code_url: "https://github.com/knu-lcbc/MolForge"
+random_seed: null  # Not stated in paper
 
 # Results entries
 results:
   - task: "de_novo"
-    challenge: "standard"
-    results_csv: "results/mist_molforge_massspecgym.csv"
+    challenge: "bonus"         # Formula provided as input at inference (Appendix A)
     uses_formula_at_inference: true
+
+    paper: "One Small Step with Fingerprints, One Giant Leap for De Novo Molecule Generation from Mass Spectra"
+    doi: "https://arxiv.org/abs/2508.04180"
+    publication_date: "2025-09-04"
+    comment: ""
+
+    # No bootstrap CIs reported in the paper. Maintainer must request from authors.
+    metrics:
+      Top-1 Accuracy: 0.2827
+      Top-1 Accuracy CI Low:
+      Top-1 Accuracy CI High:
+      Top-1 MCES: 14.72
+      Top-1 MCES CI Low:
+      Top-1 MCES CI High:
+      Top-1 Tanimoto: 0.70
+      Top-1 Tanimoto CI Low:
+      Top-1 Tanimoto CI High:
+      Top-10 Accuracy: 0.3611
+      Top-10 Accuracy CI Low:
+      Top-10 Accuracy CI High:
+      Top-10 MCES: 10.69
+      Top-10 MCES CI Low:
+      Top-10 MCES CI High:
+      Top-10 Tanimoto: 0.74
+      Top-10 Tanimoto CI Low:
+      Top-10 Tanimoto CI High:
 
 # Model architecture
 uses_mist_encoder: true
-uses_mist_cf: true
+uses_mist_cf: false   # Formula annotations come from ground truth at inference, not MIST-CF predictor
 uses_iceberg: false
 
-mist_cf_version: "pretrained_from_diffms"
+mist_cf_version: ""
 iceberg_version: ""
 
 architecture_notes: >
-  This is a two-stage pipeline consisting of (1) encoding mass spectra into molecular 
-  fingerprints using a pretrained MIST encoder, and (2) decoding 
-  those fingerprints into molecular structures using the MOLFORGE decoder. 
-  The MIST encoder utilizes a chemical formula transformer to process mass spectra peaks 
-  annotated with chemical formulae. Predicted fingerprints are 
-  generated as probabilities; a threshold of t=0.5 is applied to convert 
-  these into a discrete set of "on-bit" indices. MOLFORGE, an 
-  autoregressive transformer, takes these indices as input to predict a 
-  SMILES string. The model employs a beam search strategy 
-  (beam size = 10) to generate the top-k molecular predictions. 
-  The final structure is verified using InChIs to ensure uniqueness.
+  Two-stage pipeline: (1) MIST encoder (pretrained weights from DiffMS, Goldman et al. 2023)
+  maps mass spectra to 4096-bit Morgan fingerprint probabilities; threshold t=0.5 converts
+  probabilities to on-bit indices. (2) MolForge (Ucak et al. 2023) autoregressive transformer
+  decodes on-bit indices to SMILES via beam search (beam size=10). Chemical formula is
+  provided as ground-truth input to MIST peak annotation (bonus tier). Fingerprints are
+  4096-bit Morgan (RDKit, radius=2).
 
 # Pretraining data
 pretraining:
   used: true
   description: >
-    The MOLFORGE decoder is trained on a large-scale combined dataset containing 
-    approximately 2 million unique compounds. This dataset 
-    includes data from DSSTox, HMDB, COCONUT, and MOSES. The MIST 
-    encoder uses pretrained weights from the DIFFMS project, which were originally 
-    trained on the MassSpecGym training split.
+    MolForge decoder retrained on ~2M compounds from DiffMS combined dataset
+    (DSSTox, HMDB, COCONUT, MOSES). Training: 6 epochs, lr=5e-4, batch=128,
+    Nvidia A40 GPU (~3 days). MIST encoder uses DiffMS pretrained weights
+    (trained on MassSpecGym training split + NPLIB1/CANOPUS).
   filtering_criterion: "exact_match"
-  inchikey_layer_used: "not_specified"
-  parquet_url: ""
-  filtering_notes: >
-    The 2M compound training set for the decoder was specifically filtered to 
-    exclude any molecules present in the MassSpecGym test set to ensure 
-    generalization to novel structures. Training was performed 
-    over 6 epochs with a learning rate of 0.0005.
+  inchikey_layer_used: "27char"  # Follows DiffMS exclusion logic (see DiffMS model card)
+  parquet_url: "https://zenodo.org/records/15122968"  # DiffMS combined dataset
 
 # Evaluation setup
 uses_official_split: true
 custom_split_path: ""
-
-evaluation_notes: >
-  Evaluation is performed on the MassSpecGym benchmark. Metrics 
-  reported include Top-1 and Top-10 Accuracy (exact match), Maximum Common 
-  Edge Subgraph (MCES) distance, and Tanimoto similarity of Morgan fingerprints. Morgan fingerprints were generated using RDKit with a 
-  radius of 2 and a size of 4096 bits[cite: 206, 213]. Accuracy is determined by 
-  comparing the predicted structures to ground truth using InChI strings.
 
 # Notes for reviewers
 notes: ""
