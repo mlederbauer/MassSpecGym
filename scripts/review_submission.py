@@ -78,8 +78,7 @@ TASK_CSV_MAP = {
 
 ORACLE_KEYWORDS = ["mist_cf", "mistcf", "mist-cf", "iceberg"]
 MIST_ENCODER_KEYWORDS = ["mist", "MISTEncoder", "mist_retrieval", "MISTFingerprintRetrieval"]
-MIST_BUG_PATTERN = re.compile(r"attn\s*\+=\s*attn_mask(?!\s*#.*fix)", re.IGNORECASE)
-MIST_FIX_PATTERN = re.compile(r"masked_fill_?\(.*float\([\"']-inf[\"']\)", re.IGNORECASE)
+MIST_BUG_PATTERN = re.compile(r"attn\s*\+=\s*attn_mask\b", re.IGNORECASE)
 METRIC_OVERRIDE_PATTERN = re.compile(
     r"def\s+(on_batch_end|evaluate_retrieval_step|evaluate_de_novo_step|evaluate_mces_at_1)\s*\("
 )
@@ -434,7 +433,7 @@ def check_mist_batching_bug(report: ReviewReport, card: dict, repo_path: Optiona
     buggy_files = []
     for p in py_files:
         src = _read_file_safe(p)
-        if MIST_BUG_PATTERN.search(src) and not MIST_FIX_PATTERN.search(src):
+        if MIST_BUG_PATTERN.search(src):
             buggy_files.append(str(p.relative_to(repo_path)))
 
     if buggy_files:

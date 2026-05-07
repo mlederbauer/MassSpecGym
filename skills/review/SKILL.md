@@ -134,6 +134,11 @@ If a submission uses the MIST encoder from an external codebase (not `massspecgy
 # BUG (wrong):
 attn += attn_mask
 
+# SUBTLE BUG — fix code present but result discarded:
+new_attn_mask = torch.zeros_like(attn_mask, dtype=q.dtype)
+new_attn_mask.masked_fill_(attn_mask, float("-inf"))
+attn += attn_mask   # <-- still uses raw bool mask, new_attn_mask silently ignored
+
 # FIX (correct):
 new_attn_mask = torch.zeros_like(attn_mask, dtype=q.dtype)
 new_attn_mask.masked_fill_(attn_mask, float("-inf"))
