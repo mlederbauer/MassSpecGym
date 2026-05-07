@@ -132,8 +132,8 @@ class ReviewReport:
 
     def to_markdown(self) -> str:
         lines = []
-        status_icon = "🔴 **BLOCKED**" if self.blocked else (
-            "🟡 **WARNINGS**" if self.warnings else "🟢 **PASSED**"
+        status_icon = "**BLOCKED**" if self.blocked else (
+            "**WARNINGS**" if self.warnings else "**PASSED**"
         )
         lines.append(f"## MassSpecGym Submission Review: `{self.method_name}`")
         lines.append(f"\n**Overall status:** {status_icon}\n")
@@ -144,31 +144,31 @@ class ReviewReport:
         skips = [c for c in self.checks if c.status == Status.SKIP]
 
         if hard_fails:
-            lines.append("### ❌ Hard failures (must be resolved before merge)\n")
+            lines.append("### Hard failures (must be resolved before merge)\n")
             for c in hard_fails:
                 lines.append(f"- **{c.check_id}**: {c.message}")
                 if c.details:
                     lines.append(f"  ```\n{textwrap.indent(c.details, '  ')}\n  ```")
 
         if warnings:
-            lines.append("\n### ⚠️ Warnings (require maintainer sign-off)\n")
+            lines.append("\n### Warnings (require maintainer sign-off)\n")
             for c in warnings:
                 lines.append(f"- **{c.check_id}**: {c.message}")
                 if c.details:
                     lines.append(f"  ```\n{textwrap.indent(c.details, '  ')}\n  ```")
 
         if passes:
-            lines.append("\n### ✅ Passed checks\n")
+            lines.append("\n### Passed checks\n")
             for c in passes:
                 lines.append(f"- **{c.check_id}**: {c.message}")
 
         if skips:
-            lines.append("\n### ⏭️ Skipped checks\n")
+            lines.append("\n### Skipped checks\n")
             for c in skips:
                 lines.append(f"- **{c.check_id}**: {c.message}")
 
         if self.llm_review:
-            lines.append(f"\n### 🤖 LLM Narrative Review ({self.llm_status})\n")
+            lines.append(f"\n### LLM Narrative Review ({self.llm_status})\n")
             lines.append(self.llm_review)
 
         return "\n".join(lines)
@@ -805,13 +805,15 @@ def run_llm_review(report: ReviewReport, card: dict, submission_dir: Path) -> No
             + "\n\nYou have access to the submitted code (when provided). "
             "For every metric the submission reports, trace the actual computation path in the code "
             "and cite the specific file and line. If the code delegates to MassSpecGym parent ABCs "
-            "without overriding, say so explicitly — that is the correct pattern."
+            "without overriding, say so explicitly — that is the correct pattern. "
+            "Do not use emoji in your response. Use plain text only."
         )
     else:
         system_prompt = (
             "You are an expert reviewer for the MassSpecGym benchmark. "
             "Identify data leakage, shortcut learning, metric implementation bugs, "
-            "and tier integrity issues. Be specific and cite file:line when code is available."
+            "and tier integrity issues. Be specific and cite file:line when code is available. "
+            "Do not use emoji in your response. Use plain text only."
         )
 
     user_prompt = f"""Review this MassSpecGym leaderboard submission for evaluation issues.
@@ -825,7 +827,7 @@ Provide a structured review with:
 4. Items that require human maintainer judgment
 4. Items that look clean
 
-Be concise. Flag real issues only — do not invent problems that are not evidenced."""
+Be concise. Flag real issues only — do not invent problems that are not evidenced. Do not use emoji."""
 
     client = anthropic.Anthropic(api_key=api_key)
     try:
