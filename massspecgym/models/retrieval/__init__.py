@@ -3,30 +3,11 @@ from .random import RandomRetrieval
 from .deepsets import DeepSetsRetrieval
 from .fingerprint_ffn import FingerprintFFNRetrieval
 from .from_dict import FromDictRetrieval
-from .specbridge import SpecBridgeRetrieval
-from .mist_encoder import MistEncoderRetrieval
-from .dreams_encoder import DreamsFingerprintRetrieval
 
 __all__ = [
     "RetrievalMassSpecGymModel",
     "RandomRetrieval",
     "DeepSetsRetrieval",
     "FingerprintFFNRetrieval",
-    "FromDictRetrieval",
-    "MISTFingerprintRetrieval",
-    "GenerativeRetrieval",
-    "IcebergRetrieval",
+    "FromDictRetrieval"
 ]
-
-
-def __getattr__(name):
-    if name == "MISTFingerprintRetrieval":
-        from .mist_retrieval import MISTFingerprintRetrieval
-        return MISTFingerprintRetrieval
-    if name == "GenerativeRetrieval":
-        from .generative_retrieval import GenerativeRetrieval
-        return GenerativeRetrieval
-    if name == "IcebergRetrieval":
-        from .iceberg_retrieval import IcebergRetrieval
-        return IcebergRetrieval
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

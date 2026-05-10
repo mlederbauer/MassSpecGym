@@ -15,11 +15,10 @@ from massspecgym.data.transforms import (
 )
 from massspecgym.models.base import Stage
 from massspecgym.models.retrieval import (
-    FingerprintFFNRetrieval, FromDictRetrieval, RandomRetrieval, DeepSetsRetrieval, DreamsFingerprintRetrieval
+    FingerprintFFNRetrieval, FromDictRetrieval, RandomRetrieval, DeepSetsRetrieval
 )
-from massspecgym.models.de_novo import SmilesTransformer, FRIGIDDecoder, MolForgeDecoder, DiffMSDecoder
+from massspecgym.models.de_novo import SmilesTransformer
 from massspecgym.models.tokenizers import SmilesBPETokenizer, SelfiesTokenizer
-from massspecgym.data.fp2mol_dataset import FP2MolDataset
 from massspecgym.definitions import MASSSPECGYM_TEST_RESULTS_DIR
 
 
@@ -112,25 +111,6 @@ parser.add_argument('--num_layers_per_mlp', type=int, default=2)
 # 3. FromDict (for evaluating given fingerprints)
 parser.add_argument('--dct_path', type=str, default=None)
 
-# - FP2Mol decoders (FRIGID, MolForge, DiffMS)
-parser.add_argument('--training_mode', type=str, default='spec2mol',
-    choices=['spec2mol', 'fp2mol_pretrain'],
-    help='Training mode for FP2Mol models: spec2mol (with encoder) or fp2mol_pretrain (decoder only)')
-parser.add_argument('--molecule_library', type=str, default=None,
-    help='Path to molecule library (SMILES file) for fp2mol_pretrain mode')
-parser.add_argument('--exclude_inchikeys', type=str, default=None,
-    help='Path to InChIKey exclusion list for data safety')
-parser.add_argument('--encoder_checkpoint', type=str, default=None,
-    help='Path to pretrained MIST encoder checkpoint')
-parser.add_argument('--decoder_checkpoint', type=str, default=None,
-    help='Path to pretrained decoder checkpoint')
-parser.add_argument('--num_generation_samples', type=int, default=10,
-    help='Number of molecules to generate per spectrum')
-parser.add_argument('--mol_repr', type=str, default='smiles',
-    choices=['smiles', 'selfies', 'safe'],
-    help='Molecular representation for FP2Mol training data')
-
-
 def main(args):
     # Seed everything
     pl.seed_everything(args.seed)
@@ -162,19 +142,11 @@ def main(args):
             candidates_pth=args.candidates_pth,
         )
     elif args.task == 'de_novo':
-        if args.training_mode == 'fp2mol_pretrain' and args.molecule_library is not None:
-            dataset = FP2MolDataset(
-                smiles_source=args.molecule_library,
-                mol_repr=args.mol_repr,
-                fp_bits=args.fp_size,
-                exclude_inchikeys=args.exclude_inchikeys,
-            )
-        else:
-            dataset = MassSpecDataset(
-                pth=args.dataset_pth,
-                spec_transform=SpecTokenizer(n_peaks=args.n_peaks, matchms_kwargs=dict(mz_to=args.max_mz)),
-                mol_transform={'formula': MolToFormulaVector(), 'mol': None} if args.use_chemical_formula else None
-            )
+        dataset = MassSpecDataset(
+            pth=args.dataset_pth,
+            spec_transform = SpecTokenizer(n_peaks=args.n_peaks, matchms_kwargs=dict(mz_to=args.max_mz)),
+            mol_transform={'formula': MolToFormulaVector(), 'mol': None} if args.use_chemical_formula else None
+        )
     else:
         raise NotImplementedError(f"Task {args.task} not implemented.")
 
@@ -212,14 +184,6 @@ def main(args):
                 dropout=args.dropout,
                 **common_kwargs
             )
-        elif args.model == 'dreams':
-            if args.dreams_ckpt_path is None:
-                raise ValueError('--dreams_ckpt_path is required for --model dreams.')
-            model = DreamsFingerprintRetrieval(
-                dreams_ckpt_path=args.dreams_ckpt_path,
-                ssl_backbone_ckpt_path=args.dreams_ssl_backbone_ckpt_path,
-                **common_kwargs
-            )
         elif args.model == 'from_dict':
             model = FromDictRetrieval(
                 dct_path=args.dct_path,
@@ -253,27 +217,6 @@ def main(args):
                 pre_norm=args.pre_norm,
                 max_smiles_len=max_smiles_len,
                 chemical_formula=args.use_chemical_formula,
-                **common_kwargs
-            )
-        elif args.model == 'frigid':
-            model = FRIGIDDecoder(
-                training_mode=args.training_mode,
-                encoder_checkpoint=args.encoder_checkpoint,
-                num_generation_samples=args.num_generation_samples,
-                **common_kwargs
-            )
-        elif args.model == 'molforge':
-            model = MolForgeDecoder(
-                training_mode=args.training_mode,
-                encoder_checkpoint=args.encoder_checkpoint,
-                num_generation_samples=args.num_generation_samples,
-                **common_kwargs
-            )
-        elif args.model == 'diffms':
-            model = DiffMSDecoder(
-                training_mode=args.training_mode,
-                encoder_checkpoint=args.encoder_checkpoint,
-                num_generation_samples=args.num_generation_samples,
                 **common_kwargs
             )
         else:
@@ -339,9 +282,6 @@ def main(args):
     # Prepare data module to validate or test before training
     data_module.prepare_data()
     data_module.setup()
-
-    if args.model in {'dreams'} and not args.test_only:
-        raise ValueError('The `dreams` retrieval model is inference-only. Use --test_only (and optionally --debug).')
 
     if not args.test_only:
         # Validate before training
