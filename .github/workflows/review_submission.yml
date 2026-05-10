@@ -2,7 +2,7 @@ name: Review Submission
 
 on:
   pull_request:
-    branches: [main, feat/llm-skills,feat/llm-skills-lv2]
+    branches: [main, feat/llm-skills-lv2]
     types: [opened, synchronize, reopened, labeled]
     paths:
       - "submissions/**"

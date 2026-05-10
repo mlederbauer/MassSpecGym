@@ -2,7 +2,7 @@ name: Update Leaderboard
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/llm-skills-lv2]
     paths:
       - "submissions/**"
 
