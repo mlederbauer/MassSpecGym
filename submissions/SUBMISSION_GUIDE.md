@@ -1,27 +1,62 @@
 # MassSpecGym Leaderboard Submission Guide
 
-To submit a new result to the MassSpecGym leaderboard, open a pull request against `main` that contains **one thing only**:
+## What your PR must contain
 
-- A `submissions/<method_name>/model_card.yaml` with your metrics embedded
+Fork this repository, create a branch, and open a PR to `main` with **exactly this layout**:
 
-Do **not** edit `results/*.csv` directly. Those files are regenerated automatically from model cards on every merge to main.
+```
+submissions/<method_name>/
+  model_card.yaml       ← required
+  <your-repo>/          ← optional but strongly recommended
+    train.py
+    eval.py
+    ...
+```
 
-An automated review runs immediately on your PR and posts a report as a comment. A maintainer performs final human review before merging.
+Rules:
+- `<method_name>` must exactly match the `method_name` field in your model card (spaces → underscores, e.g. `"My Model"` → `submissions/My_Model/`)
+- Only one method per PR
+- Do **not** edit `results/*.csv` — regenerated automatically
+- Do **not** touch any file outside `submissions/<method_name>/`
+
+Your source code is welcome in the PR for review purposes. It will be stripped automatically before merge — only `model_card.yaml` is retained in the repository. Make sure your `code_url` in the model card points to a public repository for long-term access.
 
 ---
 
-## What belongs in this PR
+## model_card.yaml
 
-### 1. Model card with metrics
+Copy [`submissions/template/model_card.yaml`](template/model_card.yaml) and fill in every field. Required fields:
 
-Create `submissions/<method_name>/model_card.yaml`. Copy and fill in [`submissions/template/model_card.yaml`](template/model_card.yaml).
+| Field | Description |
+|-------|-------------|
+| `method_name` | Display name on the leaderboard (must match folder name) |
+| `paper_url` | arXiv, DOI, or preprint URL — must be accessible |
+| `code_url` | Public GitHub/GitLab URL — must be accessible |
+| `random_seed` | Integer seed used for reported results |
+| `results` | List of task/challenge entries (see below) |
+| `uses_mist_encoder` | `true` if MIST spectrum encoder used |
+| `uses_mist_cf` | `true` if MIST-CF formula predictor used |
+| `uses_iceberg` | `true` if ICEBERG spectral simulator used |
+| `pretraining.used` | `true` if any external pretraining data used |
+| `uses_official_split` | Must be `true` |
 
-`<method_name>` must exactly match the `method_name` field in the card (spaces replaced with underscores in the folder name, e.g. `"My Model"` → `submissions/My_Model/model_card.yaml`).
+Each entry in `results` requires:
 
-Each `results` entry must include a `metrics` mapping with all required metric keys for its task. Use the exact key names below.
+| Field | Description |
+|-------|-------------|
+| `task` | `de_novo` \| `retrieval` \| `simulation` |
+| `challenge` | `standard` \| `bonus` |
+| `uses_formula_at_inference` | `true` if formula predictor filters candidates at inference |
+| `paper` | Full paper title |
+| `doi` | DOI or arXiv URL |
+| `publication_date` | `YYYY-MM-DD` |
+| `metrics` | All required metric keys with values and 95% bootstrap CIs (see below) |
 
-**De novo (standard and bonus) — required metric keys:**
+**Tier integrity:** `uses_formula_at_inference: true` requires `challenge: bonus`. Submitting a formula-assisted model to `challenge: standard` is a hard failure.
 
+### Required metric keys
+
+**De novo (standard and bonus):**
 ```yaml
 metrics:
   Top-1 Accuracy: 0.00
@@ -44,8 +79,7 @@ metrics:
   Top-10 Tanimoto CI High: 0.00
 ```
 
-**Retrieval (standard and bonus) — required metric keys:**
-
+**Retrieval (standard and bonus):**
 ```yaml
 metrics:
   Hit rate @ 1: 0.00
@@ -62,8 +96,7 @@ metrics:
   MCES @ 1 CI High: 0.00
 ```
 
-**Simulation (standard and bonus) — required metric keys:**
-
+**Simulation (standard and bonus):**
 ```yaml
 metrics:
   Cosine Similarity: 0.00
@@ -83,81 +116,57 @@ metrics:
   Hit rate @ 20 CI High: 0.00
 ```
 
-**All CIs are mandatory.** Use 95% bootstrap CIs computed with the standard MassSpecGym bootstrapper (`ReturnScalarBootStrapper` in `massspecgym/utils.py`). Results without CIs will be rejected.
-
-**Tier integrity:** If your model uses any formula predictor (e.g., MIST-CF) at inference time to pre-filter candidates, set `uses_formula_at_inference: true` and `challenge: bonus`. Submitting a formula-assisted model to `challenge: standard` is grounds for rejection.
-
-### 2. Code repository (optional but recommended)
-
-You may include your model's source code directly in the PR by placing it under:
-
-```
-submissions/<method_name>/<repo_name>/
-```
-
-For example:
-
-```
-submissions/My_Model/
-  model_card.yaml
-  my-model-repo/        <- your code here
-    train.py
-    eval.py
-    ...
-```
-
-When a local repository directory is present, the automated review will:
-- Run all static code checks (MIST bug, metric overrides, formula leakage, split detection) against the local files
-- Include the full source in the LLM narrative review instead of only the README
-
-If no local directory is provided, the review falls back to cloning `code_url` from the model card. Including local code is strongly encouraged — it enables a more thorough automated review and reduces the burden on human maintainers.
+All CIs are mandatory. Use 95% bootstrap CIs from `ReturnScalarBootStrapper` in `massspecgym/utils.py`.
 
 ---
 
-## Leaderboard update on merge
+## Submission workflow
 
-When a PR is merged to `main`, the `update_leaderboard` workflow runs `scripts/leaderboard/generate_results_csvs.py`, which:
+```
+1. You open a PR from your fork to main
+2. Maintainer adds 'submission' label → automated review runs, posts report as PR comment
+3. Maintainer reads report, performs human review, approves PR
+4. Maintainer adds 'ready-to-merge' label → prepare workflow triggers:
+     a. checks out your submission (read-only)
+     b. strips everything except model_card.yaml
+     c. regenerates results/*.csv
+     d. pushes a clean branch to the base repo
+     e. closes your fork PR with a link to the clean branch
+5. Maintainer merges the clean branch into main
+```
 
-1. Reads all `submissions/*/model_card.yaml` files
-2. Replaces or inserts the corresponding rows in `results/*.csv`
-3. Commits the updated CSVs back to `main`
+You can submit from a fork (any branch) — no special access required.
 
-Baseline rows (Random, DeepSets, etc.) have no model card and are never touched by this process.
+---
+
+## Automated review checks
+
+On every PR with the `submission` label, a report is posted as a comment. Hard failures block merge. It checks:
+
+- Model card present and all required fields filled
+- All required metrics present with non-null values and CIs
+- Task/tier consistency (standard vs. bonus, formula use)
+- SMILES canonicalization
+- Pretraining InChIKey overlap (if pretraining data declared)
+- Oracle data safety (MIST-CF / ICEBERG v1.5)
+- MIST batching bug (if MIST encoder used)
+- Metric override detection (custom `on_batch_end` / `evaluate_*`)
+- Official data split used
+- LLM narrative review of paper and code
 
 ---
 
 ## Metric specifications
 
-All metrics must be computed using the pinned MassSpecGym implementations:
+All metrics must use the pinned MassSpecGym implementations. Do not re-implement them.
 
 | Metric | Specification |
 |--------|--------------|
 | InChIKey hit rate | First 14 characters (connectivity layer) only |
 | Tanimoto similarity | Morgan ECFP4, radius=2, 2048 bits |
-| MCES distance | `threshold=15`, `always_stronger_bound=True` (see `massspecgym/utils.py:MyopicMCES`) |
+| MCES distance | `threshold=15`, `always_stronger_bound=True` (`massspecgym/utils.py:MyopicMCES`) |
 | Cosine similarity | Standard MS/MS cosine as implemented in `massspecgym` |
 | Jensen-Shannon similarity | As implemented in `massspecgym` |
-
-Do not re-implement these metrics. Use the parent ABC evaluation methods. Any override of `on_batch_end()` or custom metric computation outside the MassSpecGym parent classes must be explicitly justified.
-
----
-
-## What the automated review checks
-
-On every PR, a GitHub Action runs [`scripts/leaderboard/review_submission.py`](../scripts/leaderboard/review_submission.py) and posts a structured report. It checks:
-
-- Model card present and all required fields filled
-- All required metrics present in the card's `metrics` block, with non-null values and CIs
-- Task/tier consistency (standard vs. bonus)
-- SMILES canonicalization: 0 non-RDKit-canonical entries in the candidate set
-- Pretraining InChIKey overlap (if pretraining data declared): runs `massspecgym.data.sanity_check`
-- Oracle data safety (if MIST-CF or ICEBERG used): checks v1.5 data-safe versions referenced
-- MIST batching bug: if MIST encoder used, scans linked code for the `-inf` mask fix
-- Metric override: scans for custom `on_batch_end` / `evaluate_*` reimplementations
-- Official data split used (no custom `split_pth`)
-- LLM narrative review of paper and code (fetches arXiv/PDF if accessible)
-
-**Hard failures block merge.** Warnings require explicit maintainer sign-off.
 
 ---
 
@@ -165,30 +174,26 @@ On every PR, a GitHub Action runs [`scripts/leaderboard/review_submission.py`](.
 
 ### Pretraining data
 
-If your model uses any external pretraining data (decoder pretraining, encoder pretraining, or fine-tuning on data outside MassSpecGym):
-
-- Declare it in `model_card.yaml` under `pretraining`
-- Specify the filtering criterion (`exact_match` or `tanimoto_0.70` recommended)
-- Provide a publicly accessible parquet/CSV if possible
-
-The MassSpecGym leaderboard accepts results trained with at least exact-match exclusion. We recommend Tanimoto ≥ 0.70 filtering for results claimed to reflect genuine generalization (see the MassSpecGym v1.5 paper for motivation).
+If your model uses any external pretraining data, declare it under `pretraining` in the model card. The minimum accepted filtering criterion is `exact_match` (27-char InChIKey deduplication). `tanimoto_0.70` is recommended for results claiming genuine generalization.
 
 ### Oracle components
 
-If you use MIST-CF or ICEBERG as auxiliary components, you must use the data-safe v1.5 versions provided in `massspecgym/models/oracles/`. Using externally trained versions of these models may introduce transitive data leakage.
+If you use MIST-CF or ICEBERG, use the data-safe v1.5 versions in `massspecgym/models/oracles/`. External versions may introduce transitive data leakage.
 
 ---
 
 ## Checklist before opening PR
 
 - [ ] `submissions/<method_name>/model_card.yaml` filled in completely
-- [ ] All required metrics and CIs present in the `metrics` block
+- [ ] Folder name matches `method_name` field exactly
+- [ ] All required metrics and 95% CIs present
 - [ ] `task` and `challenge` correct for each result entry
-- [ ] `paper`, `doi`, and `publication_date` filled in each result entry
-- [ ] Paper URL is accessible (arXiv, DOI, or preprint link)
-- [ ] Code repository URL is public and accessible
-- [ ] If pretraining data used: declared in model card with filtering criterion
-- [ ] If MIST-CF or ICEBERG used: v1.5 data-safe version confirmed
-- [ ] Evaluation run with official MassSpecGym data split (no custom `split_pth`)
+- [ ] `paper`, `doi`, `publication_date` filled for each entry
+- [ ] Paper URL accessible (arXiv, DOI, or preprint)
+- [ ] `code_url` is public and accessible
+- [ ] Pretraining data declared if used (with filtering criterion)
+- [ ] MIST-CF / ICEBERG: v1.5 data-safe versions confirmed if used
+- [ ] Official MassSpecGym data split used (`uses_official_split: true`)
 - [ ] Random seed documented
-- [ ] No changes to `results/*.csv` (regenerated automatically on merge)
+- [ ] No changes to `results/*.csv`
+- [ ] No changes outside `submissions/<method_name>/`
