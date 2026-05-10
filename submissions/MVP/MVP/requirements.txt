@@ -1,0 +1,16 @@
+streamlit
+torchdata==0.9.0
+torch
+dgl==1.1.3
+matchms
+dgllife==0.3.2
+pandas
+numpy
+scikit-learn
+rdkit-pypi
+pathos
+pytorch-lightning
+pydantic
+streamlit-plotly-events
+pulp
+torch_geometric

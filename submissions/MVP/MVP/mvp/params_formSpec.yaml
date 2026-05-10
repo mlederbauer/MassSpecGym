@@ -1,0 +1,121 @@
+# Experiment setup 
+job_key: ''
+run_name: 'filip_large'
+run_details: ""
+project_name: ''
+wandb_entity_name: 'mass-spec-ml'
+no_wandb: True
+seed: 0
+debug: False
+checkpoint_pth: #'../pretrained_models/msgym_formSpec.ckpt'
+
+# Training setup
+max_epochs: 2000
+accelerator: 'gpu'
+devices: [1]
+log_every_n_steps: 250
+val_check_interval: 1.0
+
+# Data paths
+candidates_pth: ../data/sample/candidates_mass.json
+dataset_pth: ../data/MassSpecGym/data/sample_data.tsv
+subformula_dir_pth: ../data/MassSpecGym/data/subformulae_default
+split_pth: 
+fp_dir_pth: '../data/MassSpecGym/data/morganfp_r5_1024.pickle'
+cons_spec_dir_pth: "../data/MassSpecGym/data/sample_consensus_formSpec.pkl"
+NL_spec_dir_pth: ""
+partial_checkpoint: ""
+
+# General hyperparameters
+batch_size: 64
+lr: 5.0e-05 
+weight_decay: 0
+contr_temp: 0.05
+early_stopping_patience: 300
+loss_strategy: 'static'
+num_workers: 50
+
+
+############################## Data transforms ##############################
+# - Spectra 
+spectra_view: SpecFormula
+#  1. Binner
+max_mz: 1000
+bin_width: 1
+mask_peak_ratio: 0.00
+
+# 2. SpecFormula
+element_list: ['H', 'C',  'O', 'N', 'P', 'S', 'Cl', 'F', 'Br', 'I', 'B', 'As', 'Si', 'Se']
+add_intensities: True
+mask_precursor: False
+
+# - Molecule
+molecule_view: "MolGraph"
+atom_feature: 'full'
+bond_feature: 'full'
+
+
+############################## Views ##############################
+# contrastive
+use_contr: False
+contr_wt: 1
+contr_wt_update: {} 
+
+# consensus spectra
+use_cons_spec: False
+cons_spec_wt: 3
+cons_spec_wt_update: {} 
+cons_loss_type: 'l2' # cosine, l2
+
+# fp prediction/usage
+pred_fp: False
+use_fp: False
+fp_loss_type: 'cosine' #cosine, bce
+fp_wt: 3
+fp_wt_update: {} 
+fp_size: 1024
+fp_radius: 5
+fp_dropout: 0.4
+
+# candidates
+aug_cands: False
+aug_cands_wt: 0.1
+aug_cands_update: {} 
+aug_cands_size: 3
+
+# neutral loss
+use_NL: False
+
+
+############################## Task and model ##############################
+task: 'retrieval'
+spec_enc: Transformer_Formula
+mol_enc: "GNN"
+model:  MultiviewContrastive
+contr_views: [['spec_enc', 'mol_enc'], ['spec_enc', 'NL_spec_enc'], ['mol_enc', 'NL_spec_enc']] #[['spec_enc', 'mol_enc'], ['mol_enc', 'cons_spec_enc'], ['cons_spec_enc', 'spec_enc'], ['fp_enc', 'mol_enc'], ['fp_enc', 'spec_enc'], ['fp_enc', 'cons_spec_enc']]
+log_only_loss_at_stages: []
+df_test_path: ""
+
+# - Spectra encoder 
+final_embedding_dim: 512
+fc_dropout: 0.4
+
+# - Spectra Token encoder
+hidden_dims: [64, 128]
+peak_dropout: 0.2
+
+# - Formula-based spec encoders
+formula_dropout: 0.2
+formula_dims: [64, 128, 256]
+cross_attn_heads: 2
+use_cls: False
+
+# -- GAT params
+attn_heads: [12,12,12]
+
+# - Molecule encoder (GNN)
+gnn_channels: [64,128,256] 
+gnn_type: "gcn"
+num_gnn_layers: 3
+gnn_hidden_dim: 512
+gnn_dropout: 0.3
