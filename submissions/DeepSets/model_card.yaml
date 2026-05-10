@@ -1,0 +1,64 @@
+method_name: "DeepSets"
+paper_url: "https://arxiv.org/abs/2410.23326"
+code_url: "https://github.com/pluskal-lab/MassSpecGym"
+random_seed: null
+
+results:
+  - task: retrieval
+    challenge: standard
+    uses_formula_at_inference: false
+    paper: "MassSpecGym: A benchmark for the discovery and identification of molecules"
+    doi: "https://doi.org/10.48550/arXiv.2410.23326"
+    publication_date: "2025-01-14"
+    comment: ""
+    metrics:
+      Hit rate @ 1: 1.47
+      Hit rate @ 1 CI Low: 1.18
+      Hit rate @ 1 CI High: 1.77
+      Hit rate @ 5: 6.21
+      Hit rate @ 5 CI Low: 5.64
+      Hit rate @ 5 CI High: 6.82
+      Hit rate @ 20: 19.23
+      Hit rate @ 20 CI Low: 18.24
+      Hit rate @ 20 CI High: 20.26
+      MCES @ 1: 25.11
+      MCES @ 1 CI Low: 24.84
+      MCES @ 1 CI High: 25.39
+
+  - task: retrieval
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "MassSpecGym: A benchmark for the discovery and identification of molecules"
+    doi: "https://doi.org/10.48550/arXiv.2410.23326"
+    publication_date: "2025-01-14"
+    comment: ""
+    metrics:
+      Hit rate @ 1: 4.42
+      Hit rate @ 1 CI Low: 3.92
+      Hit rate @ 1 CI High: 4.97
+      Hit rate @ 5: 14.46
+      Hit rate @ 5 CI Low: 13.58
+      Hit rate @ 5 CI High: 15.36
+      Hit rate @ 20: 30.76
+      Hit rate @ 20 CI Low: 29.67
+      Hit rate @ 20 CI High: 31.93
+      MCES @ 1: 15.04
+      MCES @ 1 CI Low: 14.89
+      MCES @ 1 CI High: 15.19
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "Baseline from the MassSpecGym benchmark paper."

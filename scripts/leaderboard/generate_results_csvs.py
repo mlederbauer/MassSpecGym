@@ -19,7 +19,7 @@ import yaml
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
-REPO_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent
 
 TASK_CSV_MAP = {
     ("de_novo", "standard"): REPO_ROOT / "results" / "de_novo.csv",
@@ -58,13 +58,6 @@ REQUIRED_COLUMNS = {
         "Hit rate @ 20", "Hit rate @ 20 CI Low", "Hit rate @ 20 CI High",
         "Paper", "DOI", "Comment", "Publication date",
     ],
-}
-
-KNOWN_BASELINES = {
-    "Random", "Random chemical generation", "Precursor m/z",
-    "DeepSets", "Fingerprint FFN", "DeepSets + Fourier features",
-    "FFN Fingerprint", "SMILES Transformer", "SELFIES Transformer",
-    "GNN", "FraGNNet",
 }
 
 
@@ -142,13 +135,9 @@ def generate(dry_run: bool = False) -> bool:
             if col not in df.columns:
                 df[col] = ""
 
-        # Baseline rows: keep as-is (by method name in KNOWN_BASELINES or no card)
+        # Rows with a model card are replaced; rows with no card are kept as-is.
         carded_methods = set(new_rows[(task, challenge)].keys())
-        baseline_mask = df["Method"].apply(
-            lambda m: str(m) in KNOWN_BASELINES or str(m) not in carded_methods
-        )
-        # Drop existing rows for carded methods (they will be replaced)
-        df_baselines = df[baseline_mask].copy()
+        df_uncarded = df[~df["Method"].apply(lambda m: str(m) in carded_methods)].copy()
 
         # Build new rows dataframe
         new_rows_list = list(new_rows[(task, challenge)].values())
@@ -157,13 +146,13 @@ def generate(dry_run: bool = False) -> bool:
         else:
             df_new = pd.DataFrame(columns=columns)
 
-        df_out = pd.concat([df_baselines[columns], df_new], ignore_index=True)
+        df_out = pd.concat([df_uncarded[columns], df_new], ignore_index=True)
 
         if dry_run:
-            print(f"[dry-run] {csv_path.name}: {len(df_baselines)} baseline rows + {len(df_new)} card rows")
+            print(f"[dry-run] {csv_path.name}: {len(df_uncarded)} uncarded rows + {len(df_new)} card rows")
         else:
             df_out.to_csv(csv_path, index=False)
-            print(f"Written {csv_path.name}: {len(df_baselines)} baseline + {len(df_new)} card rows")
+            print(f"Written {csv_path.name}: {len(df_uncarded)} uncarded + {len(df_new)} card rows")
 
     return ok
 

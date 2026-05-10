@@ -1,0 +1,49 @@
+method_name: "Spec2Mol"
+paper_url: "https://arxiv.org/abs/2501.01950"
+code_url: ""
+random_seed: null
+
+results:
+  - task: de_novo
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "MADGEN: Mass-Spec attends to De Novo Molecular generation"
+    doi: "https://doi.org/10.48550/arXiv.2501.01950"
+    publication_date: "2025-04-29"
+    comment: ""
+    metrics:
+      Top-1 Accuracy: 0.00
+      Top-1 Accuracy CI Low: ""
+      Top-1 Accuracy CI High: ""
+      Top-1 MCES: 45.89
+      Top-1 MCES CI Low: ""
+      Top-1 MCES CI High: ""
+      Top-1 Tanimoto: 0.09
+      Top-1 Tanimoto CI Low: ""
+      Top-1 Tanimoto CI High: ""
+      Top-10 Accuracy: 0.00
+      Top-10 Accuracy CI Low: ""
+      Top-10 Accuracy CI High: ""
+      Top-10 MCES: 32.60
+      Top-10 MCES CI Low: ""
+      Top-10 MCES CI High: ""
+      Top-10 Tanimoto: 0.13
+      Top-10 Tanimoto CI Low: ""
+      Top-10 Tanimoto CI High: ""
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "CIs not reported in the original submission. Re-evaluated in DiffMS paper (arXiv:2502.09571) — see Spec2Mol entry there."

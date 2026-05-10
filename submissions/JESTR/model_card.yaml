@@ -1,0 +1,64 @@
+method_name: "JESTR"
+paper_url: "https://arxiv.org/abs/2411.14464"
+code_url: ""
+random_seed: null
+
+results:
+  - task: retrieval
+    challenge: standard
+    uses_formula_at_inference: false
+    paper: "JESTR: Joint Embedding Space Technique for Ranking Candidate Molecules for the Annotation of Untargeted Metabolomics Data"
+    doi: "https://doi.org/10.48550/arXiv.2411.14464"
+    publication_date: "2025-06-10"
+    comment: ""
+    metrics:
+      Hit rate @ 1: 15.13
+      Hit rate @ 1 CI Low: ""
+      Hit rate @ 1 CI High: ""
+      Hit rate @ 5: 36.75
+      Hit rate @ 5 CI Low: ""
+      Hit rate @ 5 CI High: ""
+      Hit rate @ 20: 60.32
+      Hit rate @ 20 CI Low: ""
+      Hit rate @ 20 CI High: ""
+      MCES @ 1: ""
+      MCES @ 1 CI Low: ""
+      MCES @ 1 CI High: ""
+
+  - task: retrieval
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "JESTR: Joint Embedding Space Technique for Ranking Candidate Molecules for the Annotation of Untargeted Metabolomics Data"
+    doi: "https://doi.org/10.48550/arXiv.2411.14464"
+    publication_date: "2025-06-10"
+    comment: ""
+    metrics:
+      Hit rate @ 1: 11.85
+      Hit rate @ 1 CI Low: ""
+      Hit rate @ 1 CI High: ""
+      Hit rate @ 5: 32.95
+      Hit rate @ 5 CI Low: ""
+      Hit rate @ 5 CI High: ""
+      Hit rate @ 20: 61.46
+      Hit rate @ 20 CI Low: ""
+      Hit rate @ 20 CI High: ""
+      MCES @ 1: ""
+      MCES @ 1 CI Low: ""
+      MCES @ 1 CI High: ""
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "CIs not reported in original submission."
