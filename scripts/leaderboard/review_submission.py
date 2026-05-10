@@ -5,8 +5,8 @@ Runs static analysis + LLM narrative review on a submissions/<method_name>/
 folder and produces a structured JSON report plus a markdown summary.
 
 Usage:
-    python scripts/review_submission.py --submission submissions/MyModel
-    python scripts/review_submission.py --submission submissions/MyModel --output review_report.json
+    python scripts/leaderboard/review_submission.py --submission submissions/MyModel
+    python scripts/leaderboard/review_submission.py --submission submissions/MyModel --output review_report.json
 
 Requires ANTHROPIC_API_KEY in environment for the LLM review step.
 All other checks run without network access or GPU.

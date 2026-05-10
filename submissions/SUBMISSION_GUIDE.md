@@ -116,7 +116,7 @@ If no local directory is provided, the review falls back to cloning `code_url` f
 
 ## Leaderboard update on merge
 
-When a PR is merged to `main`, the `update_leaderboard` workflow runs `scripts/generate_results_csvs.py`, which:
+When a PR is merged to `main`, the `update_leaderboard` workflow runs `scripts/leaderboard/generate_results_csvs.py`, which:
 
 1. Reads all `submissions/*/model_card.yaml` files
 2. Replaces or inserts the corresponding rows in `results/*.csv`
@@ -144,7 +144,7 @@ Do not re-implement these metrics. Use the parent ABC evaluation methods. Any ov
 
 ## What the automated review checks
 
-On every PR, a GitHub Action runs [`scripts/review_submission.py`](../scripts/review_submission.py) and posts a structured report. It checks:
+On every PR, a GitHub Action runs [`scripts/leaderboard/review_submission.py`](../scripts/leaderboard/review_submission.py) and posts a structured report. It checks:
 
 - Model card present and all required fields filled
 - All required metrics present in the card's `metrics` block, with non-null values and CIs

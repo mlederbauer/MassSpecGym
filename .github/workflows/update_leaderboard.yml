@@ -30,7 +30,7 @@ jobs:
           pip install pandas pyyaml
 
       - name: Regenerate results CSVs from model cards
-        run: python scripts/generate_results_csvs.py
+        run: python scripts/leaderboard/generate_results_csvs.py
 
       - name: Commit updated CSVs if changed
         run: |

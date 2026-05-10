@@ -1,13 +1,13 @@
 ---
 name: review
-description: Maintainer guide for reviewing MassSpecGym leaderboard submissions. Covers interpreting the automated review report, performing judgment calls the automation cannot make, and approving or rejecting PRs. The automated review (scripts/review_submission.py, triggered by the review_submission GH Action) handles deterministic checks; this guide covers the residual human review.
+description: Maintainer guide for reviewing MassSpecGym leaderboard submissions. Covers interpreting the automated review report, performing judgment calls the automation cannot make, and approving or rejecting PRs. The automated review (scripts/leaderboard/review_submission.py, triggered by the review_submission GH Action) handles deterministic checks; this guide covers the residual human review.
 ---
 
 # MassSpecGym Submission Review — Maintainer Guide
 
 ## Role of this guide
 
-Every leaderboard PR triggers `scripts/review_submission.py` automatically and posts a structured report as a PR comment. That report handles all deterministic checks (schema, CIs, tier integrity, MIST bug, pretraining filter, metric overrides). **Your job as maintainer is to:**
+Every leaderboard PR triggers `scripts/leaderboard/review_submission.py` automatically and posts a structured report as a PR comment. That report handles all deterministic checks (schema, CIs, tier integrity, MIST bug, pretraining filter, metric overrides). **Your job as maintainer is to:**
 
 1. Read the automated report and triage any WARNINGs that require judgment
 2. Fetch and read the paper if the automated LLM review flagged concerns or couldn't access the paper

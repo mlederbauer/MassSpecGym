@@ -6,7 +6,7 @@ Rows for methods that have a model card are replaced by the card's metrics.
 Run on every merge to main via the update_leaderboard workflow.
 
 Usage:
-    python scripts/generate_results_csvs.py [--dry-run]
+    python scripts/leaderboard/generate_results_csvs.py [--dry-run]
 """
 
 import argparse
