@@ -6,8 +6,8 @@ Fork this repository, create a branch, and open a PR to `main` with **exactly th
 
 ```
 submissions/<method_name>/
-  model_card.yaml       ← required
-  <your-repo>/          ← optional but strongly recommended
+  model_card.yaml       required
+  <your-repo>/          optional but strongly recommended
     train.py
     eval.py
     ...
