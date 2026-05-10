@@ -1,131 +1,59 @@
-# MassSpecGym Model Card Template
-# Copy this file to submissions/<method_name>/model_card.yaml and fill in all fields.
-# <method_name> must exactly match the method_name field below
-# (use underscores for spaces, e.g. "My Model" -> submissions/My_Model/model_card.yaml).
-
 # Identity
-method_name: ""          # Display name on the leaderboard (spaces allowed, e.g. "My Model")
-paper_url: ""            # arXiv, DOI, or preprint URL. Required. Flagged if not accessible.
-code_url: ""             # Public GitHub/GitLab URL. Required. Flagged if not accessible.
-random_seed: null        # Integer seed used for reported results, e.g. 42
+method_name: "MBGen" [cite: 13]
+paper_url: "https://arxiv.org/abs/2602.01643v1" [cite: 1]
+code_url: "https://github.com/biomed-AI/MBGen" [cite: 18]
+random_seed: null 
 
 # Results
-# One entry per task/challenge combination this model is submitted for.
-# On merge to main, results/*.csv are regenerated from these entries automatically.
-# Do NOT edit results/*.csv directly.
-
 results:
-  - task: ""             # One of: de_novo | retrieval | simulation
-    challenge: ""        # One of: standard | bonus
-    uses_formula_at_inference: false  # true if formula predictor used to pre-filter candidates
-    # If uses_formula_at_inference=true and challenge=standard, the review will hard-fail.
+  - task: "de_novo" [cite: 13, 127]
+    challenge: "bonus" # Marked bonus because it uses chemical formulas to fix the node set at inference[cite: 129].
+    uses_formula_at_inference: true [cite: 129]
+    paper: "De Novo Molecular Generation from Mass Spectra via Many-Body Enhanced Diffusion" [cite: 2]
+    doi: "https://arxiv.org/abs/2602.01643v1" [cite: 1]
+    publication_date: "2026-02-02" [cite: 1]
+    comment: "Uses an edge-centric diffusion strategy with a many-body attention mechanism to capture higher-order interactions[cite: 48, 50]."
 
-    paper: ""            # Full paper title (copied to the CSV Paper column)
-    doi: ""              # DOI or arXiv URL (copied to the CSV DOI column)
-    publication_date: "" # YYYY-MM-DD
-    comment: ""          # Optional free-text note for the leaderboard (e.g. "uses pretraining")
-
-    # All metric values and 95% bootstrap CIs.
-    # Keys must match exactly — see SUBMISSION_GUIDE.md for the full list per task.
     metrics:
-      # De novo example (remove the block that doesn't apply):
-      # Top-1 Accuracy: 0.00
-      # Top-1 Accuracy CI Low: 0.00
-      # Top-1 Accuracy CI High: 0.00
-      # Top-1 MCES: 0.00
-      # Top-1 MCES CI Low: 0.00
-      # Top-1 MCES CI High: 0.00
-      # Top-1 Tanimoto: 0.00
-      # Top-1 Tanimoto CI Low: 0.00
-      # Top-1 Tanimoto CI High: 0.00
-      # Top-10 Accuracy: 0.00
-      # Top-10 Accuracy CI Low: 0.00
-      # Top-10 Accuracy CI High: 0.00
-      # Top-10 MCES: 0.00
-      # Top-10 MCES CI Low: 0.00
-      # Top-10 MCES CI High: 0.00
-      # Top-10 Tanimoto: 0.00
-      # Top-10 Tanimoto CI Low: 0.00
-      # Top-10 Tanimoto CI High: 0.00
-
-      # Retrieval example:
-      # Hit rate @ 1: 0.00
-      # Hit rate @ 1 CI Low: 0.00
-      # Hit rate @ 1 CI High: 0.00
-      # Hit rate @ 5: 0.00
-      # Hit rate @ 5 CI Low: 0.00
-      # Hit rate @ 5 CI High: 0.00
-      # Hit rate @ 20: 0.00
-      # Hit rate @ 20 CI Low: 0.00
-      # Hit rate @ 20 CI High: 0.00
-      # MCES @ 1: 0.00
-      # MCES @ 1 CI Low: 0.00
-      # MCES @ 1 CI High: 0.00
-
-      # Simulation example:
-      # Cosine Similarity: 0.00
-      # Cosine Similarity CI Low: 0.00
-      # Cosine Similarity CI High: 0.00
-      # Jensen-Shannon Similarity: 0.00
-      # Jensen-Shannon Similarity CI Low: 0.00
-      # Jensen-Shannon Similarity CI High: 0.00
-      # Hit rate @ 1: 0.00
-      # Hit rate @ 1 CI Low: 0.00
-      # Hit rate @ 1 CI High: 0.00
-      # Hit rate @ 5: 0.00
-      # Hit rate @ 5 CI Low: 0.00
-      # Hit rate @ 5 CI High: 0.00
-      # Hit rate @ 20: 0.00
-      # Hit rate @ 20 CI Low: 0.00
-      # Hit rate @ 20 CI High: 0.00
-
-  # Add more entries if the model is evaluated on multiple tasks/challenges:
-  # - task: retrieval
-  #   challenge: standard
-  #   uses_formula_at_inference: false
-  #   paper: ""
-  #   doi: ""
-  #   publication_date: ""
-  #   comment: ""
-  #   metrics:
-  #     Hit rate @ 1: 0.00
-  #     ...
+      # Results from MassSpecGym benchmark [cite: 252, 253]
+      Top-1 Accuracy: 7.58 [cite: 252]
+      Top-1 Accuracy CI Low: 0.00
+      Top-1 Accuracy CI High: 0.00
+      Top-1 MCES: 13.25 [cite: 252]
+      Top-1 MCES CI Low: 0.00
+      Top-1 MCES CI High: 0.00
+      Top-1 Tanimoto: 0.38 [cite: 252]
+      Top-1 Tanimoto CI Low: 0.00
+      Top-1 Tanimoto CI High: 0.00
+      Top-10 Accuracy: 12.54 [cite: 252]
+      Top-10 Accuracy CI Low: 0.00
+      Top-10 Accuracy CI High: 0.00
+      Top-10 MCES: 10.16 [cite: 252]
+      Top-10 MCES CI Low: 0.00
+      Top-10 MCES CI High: 0.00
+      Top-10 Tanimoto: 0.47 [cite: 252]
+      Top-10 Tanimoto CI Low: 0.00
+      Top-10 Tanimoto CI High: 0.00
 
 # Model architecture
+uses_mist_encoder: true [cite: 139] # Uses the pretrained MIST Formula Transformer[cite: 139].
+uses_mist_cf: false [cite: 144]     # Uses SIRIUS for formula annotation instead[cite: 144].
+uses_iceberg: false 
 
-uses_mist_encoder: false     # true if MIST spectrum encoder used
-uses_mist_cf: false          # true if MIST-CF formula predictor used at any stage
-uses_iceberg: false          # true if ICEBERG spectral simulator used at any stage
-
-# If uses_mist_encoder=true, we check the linked code for the -inf attention mask fix.
-# If uses_mist_cf=true or uses_iceberg=true, confirm you use the v1.5 data-safe versions:
-mist_cf_version: ""          # "v1.5_data_safe" or describe the version used
-iceberg_version: ""          # "v1.5_data_safe" or describe the version used
+mist_cf_version: ""
+iceberg_version: ""
 
 # Pretraining data
-
 pretraining:
-  used: false              # Set true if ANY external data was used for pretraining
-                           # (decoder pretraining, encoder pretraining, fine-tuning, etc.)
-
-  # Fill in the fields below only if used=true:
-  description: ""          # Free text: what datasets, how many molecules, which model component
-  filtering_criterion: ""  # How test/val molecules were excluded from pretraining data.
-                           # One of: exact_match | tanimoto_0.85 | tanimoto_0.70 | tanimoto_0.50 | none
-                           # "exact_match" = only 27-char InChIKey deduplication (minimum accepted)
-                           # "tanimoto_0.70" = recommended for credible generalization claims
-  inchikey_layer_used: ""  # "14char" (connectivity, correct) or "27char" (full, insufficient)
-  parquet_url: ""          # Public URL to pretraining molecule parquet/CSV, if available.
-                           # If not public, explain why in description. Used for automated
-                           # InChIKey overlap check via massspecgym.data.sanity_check.
+  used: true [cite: 234, 237]
+  description: "The decoder is pretrained on 2.8 million fingerprint-molecule pairs from DSSTox, HMDB, COCONUT, and MOSES[cite: 247]. The spectrum encoder is pretrained on NPLIB1 and MassSpecGym[cite: 234]."
+  filtering_criterion: "exact_match" # Follows the DiffMS strategy for data handling[cite: 234].
+  inchikey_layer_used: "27char"      # Implied by standard database deduplication[cite: 247].
+  parquet_url: "" 
 
 # Evaluation setup
-
-uses_official_split: true    # Must be true. Set false only if you have a specific reason
-                              # and can justify it; will trigger manual review.
-custom_split_path: ""         # Fill if uses_official_split=false
+uses_official_split: true [cite: 248] 
+custom_split_path: ""
 
 # Notes for reviewers
-# Optional free-text notes for the human reviewer. Describe anything unusual
-# about your setup, known limitations, or things the automated review may miss.
-notes: ""
+notes: "MBGen adopts an edge-centric approach, focusing on bond connectivity rather than just atom positions to better reflect chemical fragmentation principles[cite: 48, 59]. The many-body attention module is specifically designed to resolve structural isomers by modeling triplet interactions[cite: 60, 159]."
