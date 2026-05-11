@@ -1,0 +1,48 @@
+# Identity
+method_name: "General Intelligence-based Fragmentation (GIF)"
+paper_url: "https://arxiv.org/abs/2511.09571v1"
+code_url: "https://github.com/HassounLab/GIF"
+random_seed: null
+
+# Results
+results:
+  - task: "simulation"
+    challenge: "standard"
+    uses_formula_at_inference: false
+
+    paper: "General Intelligence-based Fragmentation (GIF): A framework for peak-labeled spectra simulation"
+    doi: "https://arxiv.org/abs/2511.09571v1"
+    publication_date: "2025-11-11"
+    comment: "Utilizes iterative refinement and fine-tuning of GPT-4o-mini on the MassSpecGym QA-sim dataset."
+
+    metrics:
+      # Simulation performance on MassSpecGym test set (n=17,556)
+      Cosine Similarity: 0.35
+      Cosine Similarity CI Low: 0.00
+      Cosine Similarity CI High: 0.00
+      Jensen-Shannon Similarity: 0.37
+      Jensen-Shannon Similarity CI Low: 0.00
+      Jensen-Shannon Similarity CI High: 0.00
+
+# Model architecture
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+
+mist_cf_version: ""
+iceberg_version: ""
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "The framework uses pretrained general-purpose LLMs (GPT-4o-mini) which are then supervised fine-tuned on the MassSpecGym QA-sim dataset (approx. 213,548 training pairs)."
+  filtering_criterion: "exact_match"
+  inchikey_layer_used: "14char"
+  parquet_url: ""
+
+# Evaluation setup
+uses_official_split: true
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "GIF is a two-step framework: 1. Fragment generation using iterative refinement (5 steps) and 2. Intensity prediction using a fine-tuned LLM with one refinement step. Performance reported reflects the GPT-4o-mini implementation on the full MassSpecGym test set."

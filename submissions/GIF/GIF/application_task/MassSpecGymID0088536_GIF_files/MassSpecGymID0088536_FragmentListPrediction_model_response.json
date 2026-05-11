@@ -1,0 +1,43 @@
+{
+  "fragments": [
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C][C][=Branch1][C][=O][N][Branch1][S][N][Branch1][Branch1][C][Ring1][=Branch1][=O]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C][C][=Branch1][C][=O][N][Branch1][S][N]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C][C][=Branch1][C][=O][N]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C][C][=Branch1][C][=O]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C][C][=Branch1][C]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C][C]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1][#C]"
+    },
+    {
+      "frag": "[C][C][C][C][C][Branch2][Ring1]"
+    },
+    {
+      "frag": "[C][C][C][C][C]"
+    },
+    {
+      "frag": "[C][C][C][C]"
+    },
+    {
+      "frag": "[C][C][C]"
+    },
+    {
+      "frag": "[C][C]"
+    },
+    {
+      "frag": "[C]"
+    }
+  ]
+}

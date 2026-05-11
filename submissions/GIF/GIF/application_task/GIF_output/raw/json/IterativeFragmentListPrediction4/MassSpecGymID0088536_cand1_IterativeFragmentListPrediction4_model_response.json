@@ -1,0 +1,16 @@
+{
+  "fragments": [
+    {
+      "frag": "[N][C][=C][C][=C][C][=C][Ring1][=Branch1]"
+    },
+    {
+      "frag": "[C][=C][C][=C][C][=C][Ring1][=Branch1]"
+    },
+    {
+      "frag": "[C][C][C][=O]"
+    },
+    {
+      "frag": "[C][C][C][C]"
+    }
+  ]
+}

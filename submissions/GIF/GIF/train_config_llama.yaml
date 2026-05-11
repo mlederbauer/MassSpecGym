@@ -1,0 +1,17 @@
+stage: sft
+do_train: true
+model_name_or_path: meta-llama/Llama-3.1-8B-Instruct
+dataset: dataset_training1kpts_auto
+dataset_dir: ./data/processed/llama_prompts
+template: llama3
+finetuning_type: lora
+lora_target: q_proj,v_proj
+output_dir: finetuned_models/llama3-lora-1kpts_auto
+per_device_train_batch_size: 4
+num_train_epochs: 3.0
+learning_rate: 0.0001
+val_size: 0.1
+logging_steps: 10
+save_steps: 500
+overwrite_output_dir: true
+bf16: true
