@@ -1,43 +1,43 @@
 # Identity
-method_name: "MBGen" [cite: 13]
-paper_url: "https://arxiv.org/abs/2602.01643v1" [cite: 1]
-code_url: "https://github.com/biomed-AI/MBGen" [cite: 18]
+method_name: "MBGen"
+paper_url: "https://arxiv.org/abs/2602.01643v1"
+code_url: "https://github.com/biomed-AI/MBGen"
 random_seed: null 
 
 # Results
 results:
-  - task: "de_novo" [cite: 13, 127]
-    challenge: "bonus" # Marked bonus because it uses chemical formulas to fix the node set at inference[cite: 129].
-    uses_formula_at_inference: true [cite: 129]
-    paper: "De Novo Molecular Generation from Mass Spectra via Many-Body Enhanced Diffusion" [cite: 2]
-    doi: "https://arxiv.org/abs/2602.01643v1" [cite: 1]
-    publication_date: "2026-02-02" [cite: 1]
-    comment: "Uses an edge-centric diffusion strategy with a many-body attention mechanism to capture higher-order interactions[cite: 48, 50]."
+  - task: "de_novo"
+    challenge: "bonus" # Marked bonus because it uses chemical formulas to fix the node set at inference.
+    uses_formula_at_inference: true
+    paper: "De Novo Molecular Generation from Mass Spectra via Many-Body Enhanced Diffusion"
+    doi: "https://arxiv.org/abs/2602.01643v1"
+    publication_date: "2026-02-02"
+    comment: "Uses an edge-centric diffusion strategy with a many-body attention mechanism to capture higher-order interactions."
 
     metrics:
-      # Results from MassSpecGym benchmark [cite: 252, 253]
-      Top-1 Accuracy: 7.58 [cite: 252]
+      # Results from MassSpecGym benchmark
+      Top-1 Accuracy: 7.58
       Top-1 Accuracy CI Low: 0.00
       Top-1 Accuracy CI High: 0.00
-      Top-1 MCES: 13.25 [cite: 252]
+      Top-1 MCES: 13.25
       Top-1 MCES CI Low: 0.00
       Top-1 MCES CI High: 0.00
-      Top-1 Tanimoto: 0.38 [cite: 252]
+      Top-1 Tanimoto: 0.38
       Top-1 Tanimoto CI Low: 0.00
       Top-1 Tanimoto CI High: 0.00
-      Top-10 Accuracy: 12.54 [cite: 252]
+      Top-10 Accuracy: 12.54
       Top-10 Accuracy CI Low: 0.00
       Top-10 Accuracy CI High: 0.00
-      Top-10 MCES: 10.16 [cite: 252]
+      Top-10 MCES: 10.16
       Top-10 MCES CI Low: 0.00
       Top-10 MCES CI High: 0.00
-      Top-10 Tanimoto: 0.47 [cite: 252]
+      Top-10 Tanimoto: 0.47
       Top-10 Tanimoto CI Low: 0.00
       Top-10 Tanimoto CI High: 0.00
 
 # Model architecture
-uses_mist_encoder: true [cite: 139] # Uses the pretrained MIST Formula Transformer[cite: 139].
-uses_mist_cf: false [cite: 144]     # Uses SIRIUS for formula annotation instead[cite: 144].
+uses_mist_encoder: true # Uses the pretrained MIST Formula Transformer.
+uses_mist_cf: false     # Uses SIRIUS for formula annotation instead.
 uses_iceberg: false 
 
 mist_cf_version: ""
@@ -45,15 +45,15 @@ iceberg_version: ""
 
 # Pretraining data
 pretraining:
-  used: true [cite: 234, 237]
-  description: "The decoder is pretrained on 2.8 million fingerprint-molecule pairs from DSSTox, HMDB, COCONUT, and MOSES[cite: 247]. The spectrum encoder is pretrained on NPLIB1 and MassSpecGym[cite: 234]."
-  filtering_criterion: "exact_match" # Follows the DiffMS strategy for data handling[cite: 234].
-  inchikey_layer_used: "27char"      # Implied by standard database deduplication[cite: 247].
+  used: true
+  description: "The decoder is pretrained on 2.8 million fingerprint-molecule pairs from DSSTox, HMDB, COCONUT, and MOSES. The spectrum encoder is pretrained on NPLIB1 and MassSpecGym."
+  filtering_criterion: "exact_match" # Follows the DiffMS strategy for data handling.
+  inchikey_layer_used: "27char"      # Implied by standard database deduplication.
   parquet_url: "" 
 
 # Evaluation setup
-uses_official_split: true [cite: 248] 
+uses_official_split: true
 custom_split_path: ""
 
 # Notes for reviewers
-notes: "MBGen adopts an edge-centric approach, focusing on bond connectivity rather than just atom positions to better reflect chemical fragmentation principles[cite: 48, 59]. The many-body attention module is specifically designed to resolve structural isomers by modeling triplet interactions[cite: 60, 159]."
+notes: "MBGen adopts an edge-centric approach, focusing on bond connectivity rather than just atom positions to better reflect chemical fragmentation principles. The many-body attention module is specifically designed to resolve structural isomers by modeling triplet interactions."
