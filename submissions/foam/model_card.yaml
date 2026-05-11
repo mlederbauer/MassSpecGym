@@ -1,0 +1,57 @@
+# Identity
+method_name: "FOAM"
+paper_url: "https://arxiv.org/abs/2602.07709v1"
+code_url: "https://github.com/coleygroup/foam"
+random_seed: 1
+
+# Results
+results:
+  - task: "de_novo"
+    challenge: "bonus"
+    uses_formula_at_inference: true
+    paper: "Generative structural elucidation from mass spectra as an iterative optimization problem"
+    doi: "https://arxiv.org/abs/2602.07709v1"
+    publication_date: "2026-02-07"
+    comment: "Poses structure elucidation as an iterative optimization problem using a formula-constrained graph genetic algorithm and spectral simulation."
+    metrics:
+      Top-1 Accuracy: 1.50
+      Top-1 Accuracy CI Low: 0.00
+      Top-1 Accuracy CI High: 0.00
+      Top-1 MCES: 12.21
+      Top-1 MCES CI Low: 0.00
+      Top-1 MCES CI High: 0.00
+      Top-1 Tanimoto: 0.35
+      Top-1 Tanimoto CI Low: 0.00
+      Top-1 Tanimoto CI High: 0.00
+      Top-10 Accuracy: 10.28
+      Top-10 Accuracy CI Low: 0.00
+      Top-10 Accuracy CI High: 0.00
+      Top-10 MCES: 6.06
+      Top-10 MCES CI Low: 0.00
+      Top-10 MCES CI High: 0.00
+      Top-10 Tanimoto: 0.53
+      Top-10 Tanimoto CI Low: 0.00
+      Top-10 Tanimoto CI High: 0.00
+
+# Model architecture
+uses_mist_encoder: false
+uses_mist_cf: true
+uses_iceberg: true
+
+mist_cf_version: "v1.0 (as described in reference 51)"
+iceberg_version: "v1.0 (as described in reference 20)"
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "ICEBERG was trained on the NIST 20 Orbitrap dataset (429,751 spectra across 20,676 molecules)."
+  filtering_criterion: "exact_match"
+  inchikey_layer_used: "14char"
+  parquet_url: ""
+
+# Evaluation setup
+uses_official_split: true
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "FOAM requires a molecular formula to constrain the genetic algorithm search space. The reported MassSpecGym results utilize seeds from both PubChem and DiffMS. Confidence intervals for Table 1 metrics were not explicitly provided in the text."
