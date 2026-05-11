@@ -88,20 +88,31 @@ jobs:
           git push origin "$BRANCH" --force
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
 
-      - name: Comment on original PR
+      - name: Create clean PR and comment on original
         uses: actions/github-script@v7
         with:
           script: |
             const branch = '${{ steps.push.outputs.branch }}';
             const origPR = context.payload.pull_request.number;
+            const origTitle = context.payload.pull_request.title;
+
+            const cleanPR = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[prepared] ${origTitle}`,
+              head: branch,
+              base: context.payload.pull_request.base.ref,
+              body: `Automated clean branch from #${origPR}. Source code stripped, CSVs regenerated.`,
+            });
+
             const body = [
               '## Submission prepared for merge',
               '',
-              `A clean branch \`${branch}\` has been created in the base repository with:`,
+              `A clean branch \`${branch}\` has been created with:`,
               '- Source code removed (only `model_card.yaml` retained)',
               '- `results/*.csv` regenerated from all model cards',
               '',
-              `**Maintainer:** merge \`${branch}\` into \`main\` — do not merge this PR directly.`,
+              `**Maintainer:** review and merge the prepared PR: ${cleanPR.data.html_url}`,
             ].join('\n');
 
             await github.rest.issues.createComment({
