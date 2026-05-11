@@ -1,0 +1,71 @@
+# Identity
+method_name: "MVP"
+paper_url: "https://doi.org/10.1021/acs.analchem.5c05675"
+code_url: "https://github.com/HassounLab/MVP"
+random_seed: null
+
+# Results
+results:
+  - task: "retrieval"
+    challenge: "standard"
+    uses_formula_at_inference: false
+    paper: "Learning from All Views: A Multiview Contrastive Framework for Metabolite Annotation"
+    doi: "https://doi.org/10.1021/acs.analchem.5c05675"
+    publication_date: "2026-02-23"
+    comment: "Results using the mol-cs (graph-consensus spectra) ranking view. Standard challenge (candidates by mass)."
+    metrics:
+      Hit rate @ 1: 36.0
+      Hit rate @ 1 CI Low: 34.8
+      Hit rate @ 1 CI High: 37.2
+      Hit rate @ 5: 68.0
+      Hit rate @ 5 CI Low: 66.8
+      Hit rate @ 5 CI High: 69.1
+      Hit rate @ 20: 91.9
+      Hit rate @ 20 CI Low: 91.2
+      Hit rate @ 20 CI High: 92.6
+      MCES @ 1: 9.3
+      MCES @ 1 CI Low: 9.1
+      MCES @ 1 CI High: 9.6
+
+  - task: "retrieval"
+    challenge: "bonus"
+    uses_formula_at_inference: true
+    paper: "Learning from All Views: A Multiview Contrastive Framework for Metabolite Annotation"
+    doi: "https://doi.org/10.1021/acs.analchem.5c05675"
+    publication_date: "2026-02-23"
+    comment: "Results using the mol-cs (graph-consensus spectra) ranking view. Bonus challenge (candidates by formula)."
+    metrics:
+      Hit rate @ 1: 14.0
+      Hit rate @ 1 CI Low: 13.2
+      Hit rate @ 1 CI High: 14.8
+      Hit rate @ 5: 36.9
+      Hit rate @ 5 CI Low: 35.7
+      Hit rate @ 5 CI High: 38.0
+      Hit rate @ 20: 68.1
+      Hit rate @ 20 CI Low: 67.0
+      Hit rate @ 20 CI High: 69.2
+      MCES @ 1: 10.4
+      MCES @ 1 CI Low: 10.2
+      MCES @ 1 CI High: 10.5
+
+# Model architecture
+uses_mist_encoder: false     # Uses custom Transformer encoder for peaks
+uses_mist_cf: true           # Uses MIST's peak formula annotation code for featurization [cite: 169]
+uses_iceberg: false
+mist_cf_version: "Used for peak formula annotation via enumeration strategy [cite: 169]"
+iceberg_version: ""
+
+# Pretraining data
+pretraining:
+  used: false                # Trained specifically on MassSpecGym splits [cite: 150, 227]
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+# Evaluation setup
+uses_official_split: true    # Evaluated on MassSpecGym benchmark [cite: 150, 216]
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "MVP leverages four views: molecular graphs, fingerprints, individual spectra, and consensus spectra. The reported results utilize the 'aggregate-then-rank' strategy (mol-cs), which the authors found superior to rank aggregation[cite: 163, 426]. Note that performance relies on MIST-based peak labeling[cite: 169]."
