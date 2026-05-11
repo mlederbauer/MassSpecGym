@@ -1,0 +1,28 @@
+{
+  "fragments": [
+    {
+      "frag": "[C][=C][C][=C][C][=C][Ring1][=Branch1]"
+    },
+    {
+      "frag": "[C][C][C][=O]"
+    },
+    {
+      "frag": "[C][C][C][C]"
+    },
+    {
+      "frag": "[C][C][C][C][=Branch1][C][=O][O]"
+    },
+    {
+      "frag": "[C][C][C][=Branch1][C][=O][O]"
+    },
+    {
+      "frag": "[C][C][C][O]"
+    },
+    {
+      "frag": "[N][C][=C][C][=C][C][=C][Ring1][=Branch1]"
+    },
+    {
+      "frag": "[O][=C][C][C][C][=Branch1][C][=O][O]"
+    }
+  ]
+}
