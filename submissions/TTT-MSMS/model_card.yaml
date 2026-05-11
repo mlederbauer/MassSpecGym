@@ -1,0 +1,60 @@
+# Identity
+method_name: "TTT MSMS"
+paper_url: "https://arxiv.org/abs/2510.23746v2"
+code_url: "https://github.com/rxn4chemistry/MultimodalAnalytical/tree/ttt-msms"
+random_seed: null # Not explicitly specified as a single integer; uses AdamW optimizer
+
+# Results
+results:
+  - task: "de_novo"
+    challenge: "standard"
+    uses_formula_at_inference: true # Input includes MS/MS spectrum and corresponding molecular formula
+
+    paper: "Test-Time Tuned Language Models Enable End-to-end De Novo Molecular Structure Generation from MS/MS Spectra"
+    doi: "https://arxiv.org/abs/2510.23746v2"
+    publication_date: "2026-01-16"
+    comment: "Uses simulation-based pre-training and test-time tuning for domain adaptation"
+
+    # All metric values for MassSpecGym (TTT from PT model)
+    metrics:
+      Top-1 Accuracy: 0.0316 # 3.16%
+      Top-1 Accuracy CI Low: null
+      Top-1 Accuracy CI High: null
+      Top-1 MCES: 11.77
+      Top-1 MCES CI Low: null
+      Top-1 MCES CI High: null
+      Top-1 Tanimoto: 0.46
+      Top-1 Tanimoto CI Low: null
+      Top-1 Tanimoto CI High: null
+      Top-10 Accuracy: 0.0607 # 6.07%
+      Top-10 Accuracy CI Low: null
+      Top-10 Accuracy CI High: null
+      Top-10 MCES: 9.65
+      Top-10 MCES CI Low: null
+      Top-10 MCES CI High: null
+      Top-10 Tanimoto: 0.54
+      Top-10 Tanimoto CI Low: null
+      Top-10 Tanimoto CI High: null
+
+# Model architecture
+uses_mist_encoder: false # Uses a custom transformer encoder-decoder
+uses_mist_cf: false # Uses provided chemical formula directly
+uses_iceberg: true # Pre-training includes ICEBERG-simulated spectra
+
+mist_cf_version: "" 
+iceberg_version: "Goldman et al. (2024a)"
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "Pre-trained on 3,971,930 simulated MS/MS spectra from 789,328 unique SMILES using CFM-ID 4.0, ICEBERG, and SCARF"
+  filtering_criterion: "exact_match" # Ensures spectra for the same compound fall into the same split
+  inchikey_layer_used: "27char" # Uses RDKit canonical SMILES
+  parquet_url: "https://rxn4chemistry.github.io/multimodal-spectroscopic-dataset/"
+
+# Evaluation setup
+uses_official_split: true # Used fixed MassSpecGym train/val/test splits
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "This work introduces the first application of test-time tuning (TTT) to de novo small-molecule structure generation from MS/MS spectra. It eliminates intermediate annotation steps by directly generating SMILES strings from spectra and formulae."
