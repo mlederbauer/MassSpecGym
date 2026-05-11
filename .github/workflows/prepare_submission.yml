@@ -6,7 +6,7 @@ name: Prepare Submission for Merge
 on:
   pull_request_target:
     types: [labeled]
-    branches: [main, feat/llm-skills-lv2]
+    branches: [main]
     paths:
       - "submissions/**"
 
