@@ -1,0 +1,62 @@
+# Identity
+method_name: "MetGenX"
+paper_url: "https://doi.org/10.1038/s41467-026-72149-6"
+code_url: "https://github.com/ZhuMetLab/MetGenX"
+random_seed: null
+
+# Results
+results:
+  - task: "retrieval"
+    challenge: "standard"
+    uses_formula_at_inference: true
+    paper: "Structure-informed deep generation enables de novo metabolite annotation in untargeted metabolomics"
+    doi: "https://doi.org/10.1038/s41467-026-72149-6"
+    publication_date: "2026-04-07"
+    comment: "Database-restricted mode; results from MassSpecGym benchmark testing set."
+    metrics:
+      Hit rate @ 1: 0.1834
+      Hit rate @ 1 CI Low: 0.00
+      Hit rate @ 1 CI High: 0.00
+      Hit rate @ 5: 0.3139
+      Hit rate @ 5 CI Low: 0.00
+      Hit rate @ 5 CI High: 0.00
+      Hit rate @ 20: 0.4843
+      Hit rate @ 20 CI Low: 0.00
+      Hit rate @ 20 CI High: 0.00
+
+  - task: "de_novo"
+    challenge: "standard"
+    uses_formula_at_inference: true
+    paper: "Structure-informed deep generation enables de novo metabolite annotation in untargeted metabolomics"
+    doi: "https://doi.org/10.1038/s41467-026-72149-6"
+    publication_date: "2026-04-07"
+    comment: "Database-free mode; results from MassSpecGym benchmark testing set."
+    metrics:
+      Top-1 Accuracy: 0.0250
+      Top-1 Accuracy CI Low: 0.00
+      Top-1 Accuracy CI High: 0.00
+      Top-10 Accuracy: 0.0462
+      Top-10 Accuracy CI Low: 0.00
+      Top-10 Accuracy CI High: 0.00
+
+# Model architecture
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "Pre-trained on 2.17 million compounds: 0.52M metabolites/natural products (COCONUT, HMDB, NIST20, GNPS) and 1.76M biologically relevant structures from PubChem."
+  filtering_criterion: "exact_match"
+  inchikey_layer_used: "14char"
+  parquet_url: "https://doi.org/10.5281/zenodo.18907370"
+
+# Evaluation setup
+uses_official_split: true
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "MetGenX uses a representation transformation strategy (structure-to-structure) guided by spectral similarity templates. The metrics reported here specifically refer to the MassSpecGym benchmark performance as detailed in the publication's benchmark section. Formula constraint was applied during beam search for both modes."
