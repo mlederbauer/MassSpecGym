@@ -1,0 +1,58 @@
+# Identity
+method_name: "FRIGID"
+paper_url: "https://arxiv.org/abs/2604.16648v1"
+code_url: "https://github.com/coleygroup/FRIGID"
+random_seed: null
+
+# Results
+results:
+  - task: "de_novo"
+    challenge: "bonus"
+    uses_formula_at_inference: true
+    paper: "FRIGID: Scaling Diffusion-Based Molecular Generation from Mass Spectra at Training and Inference Time"
+    doi: "https://arxiv.org/abs/2604.16648v1"
+    publication_date: "2026-04-21"
+    comment: "Uses pretraining on 1B structures and ICEBERG-guided inference-time scaling."
+
+    metrics:
+      Top-1 Accuracy: 0.1829
+      Top-1 Accuracy CI Low: null
+      Top-1 Accuracy CI High: null
+      Top-1 MCES: 13.49
+      Top-1 MCES CI Low: null
+      Top-1 MCES CI High: null
+      Top-1 Tanimoto: 0.43
+      Top-1 Tanimoto CI Low: null
+      Top-1 Tanimoto CI High: null
+      Top-10 Accuracy: 0.2200
+      Top-10 Accuracy CI Low: null
+      Top-10 Accuracy CI High: null
+      Top-10 MCES: 11.65
+      Top-10 MCES CI Low: null
+      Top-10 MCES CI High: null
+      Top-10 Tanimoto: 0.47
+      Top-10 Tanimoto CI Low: null
+      Top-10 Tanimoto CI High: null
+
+# Model architecture
+uses_mist_encoder: true
+uses_mist_cf: true
+uses_iceberg: true
+
+mist_cf_version: "MIST-CF (Goldman et al., 2023b)"
+iceberg_version: "ICEBERG (Wang et al., 2025a)"
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "Pretrained on up to 1 billion unlabeled molecular structures from the SAFE-GPT corpus (Noutahi et al., 2023)."
+  filtering_criterion: "exact_match"
+  inchikey_layer_used: "14char"
+  parquet_url: ""
+
+# Evaluation setup
+uses_official_split: true
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "FRIGID uses a Masked Diffusion Language Model (MDLM) on SAFE sequences. The 'FRIGID' results reported here include ICEBERG-guided inference-time scaling (cycle-consistency) which identifies and re-masks spectrum-inconsistent fragments for iterative refinement. Results reflect the 'known formula' setting as prioritized in the main manuscript."
