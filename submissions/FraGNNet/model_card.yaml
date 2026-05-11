@@ -1,0 +1,70 @@
+method_name: "FraGNNet"
+paper_url: "https://arxiv.org/abs/2410.23326"
+code_url: "https://github.com/pluskal-lab/MassSpecGym"
+random_seed: null
+
+results:
+  - task: simulation
+    challenge: standard
+    uses_formula_at_inference: false
+    paper: "MassSpecGym: A benchmark for the discovery and identification of molecules"
+    doi: "https://doi.org/10.48550/arXiv.2410.23326"
+    publication_date: "2025-01-14"
+    comment: ""
+    metrics:
+      Cosine Similarity: 0.52
+      Cosine Similarity CI Low: 0.51
+      Cosine Similarity CI High: 0.53
+      Jensen-Shannon Similarity: 0.47
+      Jensen-Shannon Similarity CI Low: 0.46
+      Jensen-Shannon Similarity CI High: 0.48
+      Hit rate @ 1: 46.64
+      Hit rate @ 1 CI Low: 44.98
+      Hit rate @ 1 CI High: 48.26
+      Hit rate @ 5: 72.56
+      Hit rate @ 5 CI Low: 71.18
+      Hit rate @ 5 CI High: 74.00
+      Hit rate @ 20: 83.58
+      Hit rate @ 20 CI Low: 82.34
+      Hit rate @ 20 CI High: 84.75
+
+  - task: simulation
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "MassSpecGym: A benchmark for the discovery and identification of molecules"
+    doi: "https://doi.org/10.48550/arXiv.2410.23326"
+    publication_date: "2025-01-14"
+    comment: ""
+    metrics:
+      Cosine Similarity: 0.52
+      Cosine Similarity CI Low: 0.51
+      Cosine Similarity CI High: 0.53
+      Jensen-Shannon Similarity: 0.47
+      Jensen-Shannon Similarity CI Low: 0.46
+      Jensen-Shannon Similarity CI High: 0.48
+      Hit rate @ 1: 31.93
+      Hit rate @ 1 CI Low: 30.40
+      Hit rate @ 1 CI High: 33.50
+      Hit rate @ 5: 63.20
+      Hit rate @ 5 CI Low: 61.64
+      Hit rate @ 5 CI High: 64.76
+      Hit rate @ 20: 82.70
+      Hit rate @ 20 CI Low: 81.45
+      Hit rate @ 20 CI High: 83.93
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "Baseline from the MassSpecGym benchmark paper."

@@ -1,0 +1,46 @@
+method_name: "ICEBERG"
+paper_url: "https://doi.org/10.1101/2025.05.28.656653"
+code_url: ""
+random_seed: null
+
+results:
+  - task: simulation
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "Neural Spectral Prediction for Structure Elucidation with Tandem Mass Spectrometry"
+    doi: "https://doi.org/10.1101/2025.05.28.656653"
+    publication_date: "2025-06-01"
+    comment: ""
+    metrics:
+      Cosine Similarity: 0.58
+      Cosine Similarity CI Low: 0.57
+      Cosine Similarity CI High: 0.59
+      Jensen-Shannon Similarity: 0.48
+      Jensen-Shannon Similarity CI Low: 0.48
+      Jensen-Shannon Similarity CI High: 0.49
+      Hit rate @ 1: 45.95
+      Hit rate @ 1 CI Low: 44.32
+      Hit rate @ 1 CI High: 47.59
+      Hit rate @ 5: 75.43
+      Hit rate @ 5 CI Low: 73.88
+      Hit rate @ 5 CI High: 76.90
+      Hit rate @ 20: 91.69
+      Hit rate @ 20 CI Low: 90.73
+      Hit rate @ 20 CI High: 92.60
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: true
+mist_cf_version: ""
+iceberg_version: "v1.5_data_safe"
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: ""

@@ -1,0 +1,49 @@
+method_name: "MS-BART"
+paper_url: "https://arxiv.org/abs/2510.20615"
+code_url: ""
+random_seed: null
+
+results:
+  - task: de_novo
+    challenge: standard
+    uses_formula_at_inference: false
+    paper: "MS-BART: Unified Modeling of Mass Spectra and Molecules for Structure Elucidation"
+    doi: "https://doi.org/10.48550/arXiv.2510.20615"
+    publication_date: "2025-10-23"
+    comment: ""
+    metrics:
+      Top-1 Accuracy: 0.0107
+      Top-1 Accuracy CI Low: ""
+      Top-1 Accuracy CI High: ""
+      Top-1 MCES: 16.47
+      Top-1 MCES CI Low: ""
+      Top-1 MCES CI High: ""
+      Top-1 Tanimoto: 0.23
+      Top-1 Tanimoto CI Low: ""
+      Top-1 Tanimoto CI High: ""
+      Top-10 Accuracy: 0.0111
+      Top-10 Accuracy CI Low: ""
+      Top-10 Accuracy CI High: ""
+      Top-10 MCES: 15.12
+      Top-10 MCES CI Low: ""
+      Top-10 MCES CI High: ""
+      Top-10 Tanimoto: 0.28
+      Top-10 Tanimoto CI Low: ""
+      Top-10 Tanimoto CI High: ""
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "CIs not reported in the original submission."

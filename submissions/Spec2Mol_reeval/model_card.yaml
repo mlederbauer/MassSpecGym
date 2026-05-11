@@ -1,0 +1,49 @@
+method_name: "Spec2Mol (re-eval)"
+paper_url: "https://arxiv.org/abs/2502.09571"
+code_url: ""
+random_seed: null
+
+results:
+  - task: de_novo
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "DiffMS: Diffusion Generation of Molecules Conditioned on Mass Spectra"
+    doi: "https://doi.org/10.48550/arXiv.2502.09571"
+    publication_date: "2025-05-27"
+    comment: "Spec2Mol re-evaluated by DiffMS authors"
+    metrics:
+      Top-1 Accuracy: 0.00
+      Top-1 Accuracy CI Low: ""
+      Top-1 Accuracy CI High: ""
+      Top-1 MCES: 37.76
+      Top-1 MCES CI Low: ""
+      Top-1 MCES CI High: ""
+      Top-1 Tanimoto: 0.12
+      Top-1 Tanimoto CI Low: ""
+      Top-1 Tanimoto CI High: ""
+      Top-10 Accuracy: 0.00
+      Top-10 Accuracy CI Low: ""
+      Top-10 Accuracy CI High: ""
+      Top-10 MCES: 29.40
+      Top-10 MCES CI Low: ""
+      Top-10 MCES CI High: ""
+      Top-10 Tanimoto: 0.16
+      Top-10 Tanimoto CI Low: ""
+      Top-10 Tanimoto CI High: ""
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "Re-evaluation of Spec2Mol by DiffMS authors. Original evaluation in MADGEN paper (arXiv:2501.01950) is in the Spec2Mol model card."

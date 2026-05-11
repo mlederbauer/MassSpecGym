@@ -40,6 +40,7 @@ setup(
             "black==24.4.2",
             "pytest==8.2.1",
             "pytest-cov==5.0.0",
+            "pyarrow"
         ],
         "notebooks": [
             "jupyter==1.0.0",
@@ -47,12 +48,7 @@ setup(
             "h5py==3.11.0",
             "scikit-learn==1.5.0",
             "pandarallel==1.6.5",
-        ],
-        "fp2mol": [
-            "transformers>=4.30.0",
-            "sentencepiece>=0.1.99",
-            "safe-mol>=0.1.0",
-        ],
+        ]
     },
     python_requires='>=3.11',
     classifiers=[

@@ -1,0 +1,46 @@
+method_name: "MARASON"
+paper_url: "https://arxiv.org/abs/2502.17874"
+code_url: ""
+random_seed: null
+
+results:
+  - task: simulation
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "Neural Graph Matching Improves Retrieval Augmented Generation in Molecular Machine Learning"
+    doi: "https://doi.org/10.48550/arXiv.2502.17874"
+    publication_date: "2025-02-25"
+    comment: ""
+    metrics:
+      Cosine Similarity: ""
+      Cosine Similarity CI Low: ""
+      Cosine Similarity CI High: ""
+      Jensen-Shannon Similarity: ""
+      Jensen-Shannon Similarity CI Low: ""
+      Jensen-Shannon Similarity CI High: ""
+      Hit rate @ 1: 34.03
+      Hit rate @ 1 CI Low: 32.86
+      Hit rate @ 1 CI High: 35.20
+      Hit rate @ 5: 64.04
+      Hit rate @ 5 CI Low: 62.77
+      Hit rate @ 5 CI High: 65.19
+      Hit rate @ 20: 85.39
+      Hit rate @ 20 CI Low: 84.48
+      Hit rate @ 20 CI High: 86.24
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "Cosine/Jensen-Shannon similarity not reported in original submission."

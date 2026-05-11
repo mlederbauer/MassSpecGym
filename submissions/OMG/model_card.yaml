@@ -1,0 +1,49 @@
+method_name: "OMG (JESTR)"
+paper_url: "https://doi.org/10.1021/acs.analchem.5c01770"
+code_url: ""
+random_seed: null
+
+results:
+  - task: de_novo
+    challenge: bonus
+    uses_formula_at_inference: false
+    paper: "Optimized De Novo Molecular Generation (OMG) for Mass Spectra Annotation Using Transfer and Reinforcement Learning"
+    doi: "https://doi.org/10.1021/acs.analchem.5c01770"
+    publication_date: "2025-09-16"
+    comment: "JESTR-based candidate generation variant"
+    metrics:
+      Top-1 Accuracy: 0.0032
+      Top-1 Accuracy CI Low: ""
+      Top-1 Accuracy CI High: ""
+      Top-1 MCES: 58.16
+      Top-1 MCES CI Low: ""
+      Top-1 MCES CI High: ""
+      Top-1 Tanimoto: 0.09
+      Top-1 Tanimoto CI Low: ""
+      Top-1 Tanimoto CI High: ""
+      Top-10 Accuracy: 0.0255
+      Top-10 Accuracy CI Low: ""
+      Top-10 Accuracy CI High: ""
+      Top-10 MCES: 56.99
+      Top-10 MCES CI Low: ""
+      Top-10 MCES CI High: ""
+      Top-10 Tanimoto: 0.14
+      Top-10 Tanimoto CI Low: ""
+      Top-10 Tanimoto CI High: ""
+
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+pretraining:
+  used: false
+  description: ""
+  filtering_criterion: ""
+  inchikey_layer_used: ""
+  parquet_url: ""
+
+uses_official_split: true
+custom_split_path: ""
+notes: "CIs not reported. See also OMG (ESP) for the ESP-based variant."
