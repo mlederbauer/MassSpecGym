@@ -1,0 +1,48 @@
+# Identity
+method_name: "SpectraLLM"
+paper_url: "https://arxiv.org/abs/2508.08441v2"
+code_url: "https://github.com/OPilgrim/SpectraLLM"
+random_seed: 42
+
+# Results
+results:
+  - task: "de_novo"
+    challenge: "standard"
+    uses_formula_at_inference: false
+    paper: "SPECTRALLM: UNCOVERING THE ABILITY OF LLMS FOR MOLECULE STRUCTURE ELUCIDATION FROM MULTI-SPECTRAL"
+    doi: "https://arxiv.org/abs/2508.08441v2"
+    publication_date: "2026-03-21"
+    comment: "Uses a unified language-based architecture (Qwen3-32B backbone) with LoRA-based adaptation to reason over multi-spectral modalities."
+    
+    metrics:
+      # Metrics based on Table 3 (MassSpecGym dataset)
+      Top-1 Validity: 0.9974
+      Top-1 Tanimoto: 0.1533
+      Top-1 Tanimoto CI Low: null
+      Top-1 Tanimoto CI High: null
+      Top-1 Cosine Similarity: 0.5003
+      Top-1 Functional Group Recovery: 0.5003
+      Top-1 Tanimoto (MACCS): 0.4723
+      Top-1 Fraggle: 0.3610
+
+# Model architecture
+uses_mist_encoder: false
+uses_mist_cf: false
+uses_iceberg: false
+mist_cf_version: ""
+iceberg_version: ""
+
+# Pretraining data
+pretraining:
+  used: true
+  description: "Combined corpus of over 940,000 unique molecules and 5.5 million spectra from QM9s, the Multimodal Spectroscopic dataset, MassSpecGym, and MassBank. Includes simulated IR, Raman, UV-Vis, MS, and NMR (1H, 13C, HSQC)."
+  filtering_criterion: "exact_match"
+  inchikey_layer_used: "14char"
+  parquet_url: "https://github.com/OPilgrim/SpectraLLM"
+
+# Evaluation setup
+uses_official_split: true
+custom_split_path: ""
+
+# Notes for reviewers
+notes: "SpectraLLM represents both continuous and discrete spectral modalities as structured natural language descriptions. It performs end-to-end structure prediction without the use of pre-compiled databases, handcrafted fragment rules, or molecular formulas at inference. The model utilizes the Qwen3-32B foundation model and was fine-tuned using Low-Rank Adaptation (LoRA)."
